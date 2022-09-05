@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<%- include('partials/head') %>
+
+<body>
+    <%- include('partials/message') %>
+
+    <div class="centered">
+        <form id="loginForm" name="loginForm" action="" method="post">
+            <div class="container" id="dateContainer">
+                <div class="row">
+                    <div class="col-md-12"></div>
+                </div>
+                <div class="row">
+                    <div class="col text-center"><input type="text" placeholder="00 - 00 - 0000" autofocus="" autocomplete="off" OnInput="validateInput();" id="dateInput" name="dateInput"></div>
+                </div>
+            </div>
+            <div class="container" id="pwdContainer" style="display: none;">
+                <div class="row">
+                    <div class="col-md-12"></div>
+                </div>
+                <div class="row">
+                    <div class="col text-center"><input type="password" placeholder="*********" readonly autocomplete="off" id="pwdInput" name="pwdInput"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <%- include('partials/footer') %>
+
+    <script src="assets/js/login.js"></script>
+</body>
+
+</html>
