@@ -52,6 +52,7 @@ app.use(session.default({
   secret: 'WJyx6874#!#ic!$5c*8wsr^o44MDqM^',
   resave: true,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
     domain: '.timben.net',
     maxAge: 24 * 6 * 60 * 10000

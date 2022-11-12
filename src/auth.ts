@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { login_url } from './config.json';
+import { login_url, base_url } from './config.json';
 
 function restricted(req: Request, res: Response, next: NextFunction) {
     if (req.session.user) {
@@ -8,7 +8,7 @@ function restricted(req: Request, res: Response, next: NextFunction) {
     } else {
         req.session.messageText = "Access denied!";
         req.session.messageType = "alert-error";
-        req.session.redirect = "http://" + req.get('host') + req.originalUrl;
+        req.session.redirect = base_url + req.originalUrl;
         res.redirect(login_url);
     }
 }
