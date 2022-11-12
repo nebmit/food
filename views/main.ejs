@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<%- include('partials/head') %>
+
+    <body>
+        <%- include('partials/message') %>
+
+            <div class="container text-end unselectable"
+                style="font-family: Montserrat, sans-serif;position: fixed;margin-top: 20px;padding-right: 20px;padding-left: 0px;max-width: 100%;">
+                <div class="d-inline-block">
+                    <p class="text-lowercase"><a href="/logout">logout</a></p>
+                </div>
+            </div>
+
+            <div class="centered unselectable" style="font-family: Montserrat, sans-serif;">
+                <div class="d-inline-block">
+                    <h4>Hi, <b>
+                            <%= user.name %>
+                        </b>. </h4>
+                    <p class="font-monospace text-lowercase">active <b>level <%= user.access %></b> access. </p>
+                </div>
+            </div>
+
+
+            <%- include('partials/footer') %>
+    </body>
+
+</html>
