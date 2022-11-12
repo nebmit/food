@@ -42,9 +42,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, authorization");
-  res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
+  res.header("X-Frame-Options", "DENY");
+  res.header("X-XSS-Protection", "1; mode=block");
+  res.header("X-Content-Type-Options", "nosniff");
+  res.header("Referrer-Policy", "no-referrer");
+  res.header("Feature-Policy", "geolocation 'none'; midi 'none'; sync-xhr 'none'; microphone 'none'; camera 'none'; magnetometer 'none'; gyroscope 'none'; speaker 'none'; vibrate 'none'; fullscreen 'self'; payment 'none';");
+  res.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self';");
+  res.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   next();
 });
 
@@ -54,6 +58,7 @@ app.use(session.default({
   saveUninitialized: false,
   proxy: true,
   cookie: {
+    secure: true,
     domain: '.timben.net',
     maxAge: 24 * 6 * 60 * 10000
   },

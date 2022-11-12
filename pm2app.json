@@ -1,0 +1,9 @@
+{
+    "apps": [
+        {
+            "name": "food",
+            "script": "npm",
+            "args": "run build"
+        }
+    ]
+}
