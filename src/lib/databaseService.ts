@@ -85,6 +85,6 @@ export class DatabaseService {
         };
     }
 }
-DatabaseService.initialize('./src/lib/database.db').catch((error) => {
+await DatabaseService.initialize('./src/lib/database.db').catch((error) => {
     console.error(`Error initializing database: ${error}`);
 });

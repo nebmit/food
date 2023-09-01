@@ -1,12 +1,12 @@
 import { DatabaseService } from "$lib/databaseService";
+import type { Recipe } from "$lib/types";
 
 export async function load() {
-    console.log("Load function called"); // Add this line
     try {
-        const recipe = await DatabaseService.getRecipeById(1);
-        console.log("Recipe loaded", recipe);
+        const allRecipes: Recipe[] = await DatabaseService.getRecipes();
+        const randomRecipes = allRecipes.sort(() => Math.random() - Math.random()).slice(0, 5);
         return {
-            recipe
+            randomRecipes
         };
     } catch (error) {
         console.error("Error in load function:", error);
