@@ -1,15 +1,20 @@
 <script lang="ts">
     import { cubicIn } from "svelte/easing";
-    import { draw, fade } from "svelte/transition";
+    import { draw, fade, blur, fly } from "svelte/transition";
     import { variableTransition } from "../transitions";
+    import { onMount } from "svelte";
 
     export let width = "400";
     export let stroke = "#fff";
     export let color = "#00d5ff";
 
+    export let inDuration = 1500;
+
     export let outTransition: { [key: string]: any; fn: Function } = {
         fn: fade,
     };
+
+    let visible = false;
 
     function mirrored({
         x1,
@@ -43,8 +48,8 @@
             color,
             in: {
                 fn: draw,
-                duration: 750,
-                delay: 1250,
+                duration: 0.5 * inDuration,
+                delay: 0.83333333333 * inDuration,
             },
         }),
         // Left Bottom
@@ -55,8 +60,8 @@
             y2: 245,
             in: {
                 fn: draw,
-                duration: 750,
-                delay: 750,
+                duration: 0.5 * inDuration,
+                delay: 0.5 * inDuration,
             },
         },
         // Middle
@@ -67,8 +72,8 @@
             y2: 135,
             in: {
                 fn: draw,
-                duration: 750,
-                delay: 750,
+                duration: 0.5 * inDuration,
+                delay: 0.5 * inDuration,
             },
         },
         // Right Top
@@ -79,8 +84,8 @@
             y1: 340,
             in: {
                 fn: draw,
-                duration: 750,
-                delay: 400,
+                duration: 0.5 * inDuration,
+                delay: 0.26666666667 * inDuration,
             },
         },
         // Right Middle
@@ -92,7 +97,7 @@
             color,
             in: {
                 fn: draw,
-                duration: 750,
+                duration: 0.5 * inDuration,
                 delay: 0,
             },
         },
@@ -104,8 +109,8 @@
             y1: 505,
             in: {
                 fn: draw,
-                duration: 750,
-                delay: 400,
+                duration: 0.5 * inDuration,
+                delay: 0.26666666667 * inDuration,
             },
         },
     ];
@@ -120,30 +125,54 @@
         {
             cx: 330,
             cy: 100,
-            in: { fn: fade, duration: 500, delay: 750, easing: cubicIn },
+            in: {
+                fn: fade,
+                duration: 0.33333333333 * inDuration,
+                delay: 0.5 * inDuration,
+                easing: cubicIn,
+            },
         },
         {
             cx: 65,
             cy: 220,
-            in: { fn: fade, duration: 500, delay: 500, easing: cubicIn },
+            in: {
+                fn: fade,
+                duration: 0.33333333333 * inDuration,
+                delay: 0.33333333333 * inDuration,
+                easing: cubicIn,
+            },
         },
         {
             cx: 400,
             cy: 420,
-            in: { fn: fade, duration: 500, delay: 250, easing: cubicIn },
+            in: {
+                fn: fade,
+                duration: 0.33333333333 * inDuration,
+                delay: 0.16666666667 * inDuration,
+                easing: cubicIn,
+            },
         },
         {
             cx: 670,
             cy: 330,
-            in: { fn: fade, duration: 500, easing: cubicIn },
+            in: {
+                fn: fade,
+                duration: 0.33333333333 * inDuration,
+                delay: 0,
+                easing: cubicIn,
+            },
         },
         {
             cx: 590,
             cy: 520,
             color,
-            in: { fn: fade, duration: 0 },
+            in: { fn: fade, duration: 0, delay: 0 },
         },
     ];
+
+    onMount(() => {
+        visible = true;
+    });
 </script>
 
 <svg
@@ -152,12 +181,21 @@
     xmlns="http://www.w3.org/2000/svg"
     out:variableTransition={outTransition}
 >
-    <g>
-        {#each lines as line}
+    <line
+        stroke={lines[0].color !== undefined ? lines[0].color : stroke}
+        in:variableTransition={lines[0].in}
+        y1={lines[0].y1}
+        x1={lines[0].x1}
+        y2={lines[0].y2}
+        x2={lines[0].x2}
+        stroke-linecap="round"
+        stroke-width="26"
+    />
+    {#each lines as line}
+        {#if visible}
             <line
                 stroke={line.color !== undefined ? line.color : stroke}
                 in:variableTransition={line.in}
-                out:variableTransition={line.out}
                 y1={line.y1}
                 x1={line.x1}
                 y2={line.y2}
@@ -165,19 +203,20 @@
                 stroke-linecap="round"
                 stroke-width="26"
             />
-        {/each}
+        {/if}
+    {/each}
 
-        {#each ellipses as ellipse}
+    {#each ellipses as ellipse}
+        {#if visible}
             <ellipse
                 stroke={ellipse.color ?? stroke}
                 in:variableTransition={ellipse.in}
-                out:variableTransition={ellipse.out}
                 cy={ellipse.cy}
                 cx={ellipse.cx}
                 ry="7"
                 rx="7"
                 stroke-width="14"
             />
-        {/each}
-    </g>
+        {/if}
+    {/each}
 </svg>

@@ -16,13 +16,11 @@ export class DatabaseService {
     }
 
     public static async getRecipes(limit = 10): Promise<Recipe[]> {
-        console.log(limit)
         const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes LIMIT ?`, limit);
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
     }
 
     public static async getRecipeById(recipeId: number): Promise<Recipe> {
-        console.log(recipeId)
         const recipe: RecipeRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Recipes WHERE RecipeID = ?`, recipeId);
         if (!recipe) throw new Error('Recipe not found');
 
