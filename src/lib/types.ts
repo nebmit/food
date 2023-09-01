@@ -40,6 +40,7 @@ export interface Recipe {
     MainVersion: RecipeVersion;
     PortionQuantity: number;
     PortionDescriptor: string;
+    EstimatedTime: number;
     ComplexityRating?: number;
     MayhemRating?: number;
 }
