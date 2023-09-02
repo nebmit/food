@@ -41,14 +41,14 @@
     </div>
     <div class="p-4">
         <h2 class="text-lg font-semibold">{recipe.RecipeName}</h2>
-        <div class="flex space-x-2">
-            <div class="text-yellow-500">
+        <div class="flex flex-row space-x-2">
+            <div class="text-cyan-500">
                 Complexity
                 {#each Array(5).fill(null) as _, i}
                     <span>{i < complexity ? "★" : "☆"}</span>
                 {/each}
             </div>
-            <div class="text-blue-500">
+            <div class="text-purple-500">
                 Mayhem
                 {#each Array(5).fill(null) as _, i}
                     <span>{i < mayhem ? "★" : "☆"}</span>
