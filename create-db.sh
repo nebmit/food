@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DB_PATH="./src/lib/database.db"
+DB_PATH="./src/lib/server/database.db"
 SCHEMA_PATH="./db_schema.sql"
 
 # Check if database exists
