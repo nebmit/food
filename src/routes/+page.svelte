@@ -10,26 +10,40 @@
 
     let logo = false;
     let content = false;
+    let contentInDuration = 300;
 
     onMount(() => {
-        logo = true;
-        setTimeout(() => {
-            logo = false;
-            setTimeout(() => {
-                document.body.style.backgroundColor = "var(--text-color)";
-                document.body.style.color = "var(--bg-color)";
-            }, 300);
-            setTimeout(() => {
-                content = true;
-            }, 600);
-        }, 1250);
+        sessionStorage.getItem("alreadyPlayedLogo") === "true"
+            ? (() => {
+                  contentInDuration = 0;
+                  document.body.style.backgroundColor = "var(--bg-color)";
+                  document.body.style.color = "var(--text-color)";
+                  logo = false;
+                  content = true;
+              })()
+            : (() => {
+                  sessionStorage.setItem("alreadyPlayedLogo", "true");
+                  content = false;
+                  logo = true;
+                  setTimeout(() => {
+                      logo = false;
+                      setTimeout(() => {
+                          document.body.style.backgroundColor =
+                              "var(--bg-color)";
+                          document.body.style.color = "var(--text-color)";
+                      }, 300);
+                      setTimeout(() => {
+                          content = true;
+                      }, 600);
+                  }, 1250);
+              })();
     });
 </script>
 
 <div class="container mx-auto">
     <div class="flex flex-col h-screen justify-center">
         {#if logo}
-            <div class="hidden lg:flex justify-center">
+            <div class="flex justify-center">
                 <Logo
                     width="30%"
                     stroke="#8C8C8D"
@@ -47,7 +61,7 @@
                 class="flex flex-col space-y-4 w-full mb-60"
                 in:glitch={{
                     displacement: 75,
-                    duration: 300,
+                    duration: contentInDuration,
                     easing: circIn,
                 }}
             >
@@ -68,6 +82,15 @@
         {/if}
     </div>
 </div>
+
+<svelte:head>
+    <style>
+        body {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+    </style>
+</svelte:head>
 
 <style>
     #title {

@@ -1,4 +1,4 @@
-import { DatabaseService } from "$lib/databaseService";
+import { DatabaseService } from "$lib/server/databaseService";
 import type { Recipe } from "$lib/types";
 
 export async function load() {

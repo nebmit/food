@@ -8,11 +8,10 @@
 }
 
 :root {
-    --bg-color: #18181b;
-    --text-color: #fff;
+    --bg-color: #fff;
+    --text-color: #18181b
 }
 
 body {
-    background-color: var(--bg-color);
     color: var(--text-color);
 }

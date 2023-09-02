@@ -2,7 +2,7 @@ import type { Database } from 'sqlite';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import type { InstructionRaw, RecipeIngredientRaw, RecipeRaw } from './databaseTypes';
-import type { Ingredient, Recipe, RecipeIngredient, RecipeVersion } from './types';
+import type { Ingredient, Recipe, RecipeIngredient, RecipeVersion } from '../types';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -83,6 +83,6 @@ export class DatabaseService {
         };
     }
 }
-await DatabaseService.initialize('./src/lib/database.db').catch((error) => {
+await DatabaseService.initialize('./src/lib/server/database.db').catch((error) => {
     console.error(`Error initializing database: ${error}`);
 });

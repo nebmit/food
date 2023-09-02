@@ -1,14 +1,15 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import type { Recipe } from "$lib/types";
 
     export let recipe: Recipe;
 
-    const imageUrl = "https://via.placeholder.com/400";
+    const imageUrl = "/images/" + recipe.RecipeID + ".png";
     const complexity = recipe.ComplexityRating ?? 0;
     const mayhem = recipe.MayhemRating ?? 0;
 
     function openRecipeLink() {
-        window.open("https://example.com/recipe", "_blank");
+        goto("/recipe/" + recipe.RecipeID);
     }
 
     function handleKeydown(event: KeyboardEvent) {
