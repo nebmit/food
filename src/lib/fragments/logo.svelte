@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { cubicIn } from "svelte/easing";
-    import { draw, fade, blur, fly } from "svelte/transition";
-    import { variableTransition } from "../transitions";
+    import { variableTransition } from "$lib/transitions";
     import { onMount } from "svelte";
+    import { cubicIn } from "svelte/easing";
+    import { draw, fade } from "svelte/transition";
 
     export let width = "400";
     export let stroke = "#fff";
@@ -181,16 +181,6 @@
     xmlns="http://www.w3.org/2000/svg"
     out:variableTransition={outTransition}
 >
-    <line
-        stroke={lines[0].color !== undefined ? lines[0].color : stroke}
-        in:variableTransition={lines[0].in}
-        y1={lines[0].y1}
-        x1={lines[0].x1}
-        y2={lines[0].y2}
-        x2={lines[0].x2}
-        stroke-linecap="round"
-        stroke-width="26"
-    />
     {#each lines as line}
         {#if visible}
             <line

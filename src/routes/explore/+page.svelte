@@ -24,7 +24,7 @@
             <div class="flex flex-row justify-center w-full space-x-4">
                 <input
                     type="text"
-                    class="w-1/2 sm:w-1/3 border-2 border-gray-300 bg-white h-10 px-5 pr-16 rounded-lg text-lg focus:outline-none"
+                    class="w-1/2 sm:w-1/3 border-2 border-slate-300 bg-white h-10 px-5 pr-16 rounded-lg text-lg focus:outline-none hover:shadow-md focus:shadow-md transition ease-in-out duration-200 transform"
                     placeholder="Search"
                 />
                 <button

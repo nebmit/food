@@ -34,7 +34,7 @@
             alt={recipe.RecipeName}
         />
         <div
-            class="absolute bottom-0 right-0 p-2 rounded-tl-lg bg-sky-900 bg-opacity-80 text-white text-xs font-bold"
+            class="absolute bottom-0 right-0 p-2 rounded-tl-lg bg-slate-700 bg-opacity-80 text-white text-xs font-bold"
         >
             ~ {recipe.EstimatedTime} min
         </div>

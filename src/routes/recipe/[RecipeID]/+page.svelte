@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Recipe, RecipeIngredient, Instruction } from "$lib/types";
+    import type { Instruction, Recipe, RecipeIngredient } from "$lib/types";
 
     export let data: { recipe: Recipe };
     const recipe = data.recipe;
@@ -9,7 +9,7 @@
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
 </script>
 
-<div class="max-w-screen-lg mx-auto p-4 mt-20">
+<div class="max-w-screen-lg mx-auto p-4 lg:mt-20">
     <div class="relative h-40 mb-6">
         <img
             class="absolute top-0 left-0 w-full h-full rounded-t-lg object-cover object-center blur-sm"
