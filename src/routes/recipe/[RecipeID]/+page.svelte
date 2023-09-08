@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Navbar from "$lib/fragments/navbar.svelte";
     import type { Instruction, Recipe, RecipeIngredient } from "$lib/types";
 
     export let data: { recipe: Recipe };
@@ -9,7 +10,11 @@
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
 </script>
 
-<div class="max-w-screen-lg mx-auto p-4 lg:mt-20">
+<div class="hidden sm:inline">
+    <Navbar />
+</div>
+
+<div class="max-w-screen-lg mx-auto p-4 lg:mt-10">
     <div class="relative h-40 mb-6">
         <img
             class="absolute top-0 left-0 w-full h-full rounded-t-lg object-cover object-center blur-sm"
@@ -70,7 +75,7 @@
         <hr />
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <!-- Ingredients List -->
         <div class="p-4">
             <h2 class="text-xl font-semibold mb-2">Ingredients</h2>

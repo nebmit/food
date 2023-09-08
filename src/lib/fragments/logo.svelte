@@ -6,7 +6,7 @@
 
     export let width = "400";
     export let stroke = "#fff";
-    export let color = "#00d5ff";
+    export let color = "#00d5d5";
 
     export let inDuration = 1500;
 

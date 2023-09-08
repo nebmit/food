@@ -30,7 +30,7 @@
                 <button
                     class="hidden sm:inline hover:bg-slate-500 hover:text-white bg-slate-100 text-slate-900 px-4 py-2 rounded transition ease-in-out duration-200 transform"
                 >
-                    explore
+                    search
                 </button>
                 <div class="inline sm:hidden -mt-3">
                     <Navbar />
