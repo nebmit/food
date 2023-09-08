@@ -1,8 +1,8 @@
 import type { Database } from 'sqlite';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import type { InstructionRaw, RecipeIngredientRaw, RecipeRaw } from './databaseTypes';
-import type { Ingredient, Recipe, RecipeIngredient, RecipeVersion } from '../types';
+import type { Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
+import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RequiredItemRaw } from './databaseTypes';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -24,18 +24,10 @@ export class DatabaseService {
         const recipe: RecipeRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Recipes WHERE RecipeID = ?`, recipeId);
         if (!recipe) throw new Error('Recipe not found');
 
-        const mainVersion = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, recipe.MainVersionID);
-        if (!mainVersion) throw new Error('Recipe main version not found');
-
         return {
             RecipeID: recipe.RecipeID,
             RecipeName: recipe.RecipeName,
-            MainVersion: await DatabaseService.getRecipeVersionById(mainVersion.RecipeVersionID),
-            PortionQuantity: recipe.PortionQuantity,
-            PortionDescriptor: recipe.PortionDescriptor,
-            EstimatedTime: recipe.EstimatedTime,
-            ComplexityRating: recipe.ComplexityRating,
-            MayhemRating: recipe.MayhemRating
+            MainVersion: await DatabaseService.getRecipeVersionById(recipe.MainVersionID),
         };
     }
 
@@ -43,31 +35,63 @@ export class DatabaseService {
         const version = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, versionId);
         if (!version) throw new Error('Recipe version not found');
 
-        const rawIngredients: RecipeIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeIngredients WHERE RecipeVersionID = ?`, versionId);
+        const rawIngredients: RecipeVersionIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionIngredients WHERE RecipeVersionID = ?`, versionId);
         const ingredients: RecipeIngredient[] = await Promise.all(rawIngredients.map(DatabaseService.getRecipeIngredient));
+        const rawItems: RecipeVersionItemRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionItems WHERE RecipeVersionID = ?`, versionId);
+        const items: RecipeItem[] = await Promise.all(rawItems.map(DatabaseService.getRequiredItem));
 
         const rawInstructions: InstructionRaw[] = await DatabaseService.db.all(`SELECT * FROM Instructions WHERE RecipeVersionID = ?`, versionId);
+
 
         return {
             RecipeVersionID: version.RecipeVersionID,
             ParentVersionID: version.ParentVersionID,
             VersionComment: version.VersionComment,
+            PortionQuantity: version.PortionQuantity,
+            PortionDescriptor: version.PortionDescriptor,
+            ActiveTimeMinutes: version.ActiveTimeMinutes,
+            PassiveTimeMinutes: version.PassiveTimeMinutes,
+            ComplexityRating: version.ComplexityRating,
+            MayhemRating: version.MayhemRating,
             Ingredients: ingredients,
-            Instructions: rawInstructions
+            Items: items,
+            Instructions: rawInstructions,
         };
     }
 
-    private static async getRecipeIngredient(recipeIngredient: RecipeIngredientRaw): Promise<RecipeIngredient> {
+    private static async getRecipeIngredient(recipeIngredient: RecipeVersionIngredientRaw): Promise<RecipeIngredient> {
         try {
             const ingredient = await DatabaseService.getIngredientById(recipeIngredient.IngredientID);
-            return { ...recipeIngredient, Ingredient: ingredient }
+            if (!ingredient) throw new Error('Item not found');
+            return {
+                RecipeVersionIngredientID: recipeIngredient.RecipeVersionIngredientID,
+                RecipeVersionID: recipeIngredient.RecipeVersionID,
+                Ingredient: ingredient,
+                Quantity: recipeIngredient.Quantity,
+                Measurement: recipeIngredient.Measurement,
+            }
         } catch (error) {
             throw new Error('Error getting recipe ingredient: ' + error);
         }
     }
 
+    private static async getRequiredItem(recipeItem: RecipeVersionItemRaw): Promise<RecipeItem> {
+        try {
+            const item: RequiredItemRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Items WHERE ItemID = ?`, recipeItem.ItemID);
+            if (!item) throw new Error('Item not found');
+            return {
+                RecipeVersionItemID: recipeItem.RecipeVersionItemID,
+                RecipeVersionID: recipeItem.RecipeVersionID,
+                Item: item,
+                Quantity: recipeItem.Quantity,
+            }
+        } catch (error) {
+            throw new Error('Error getting recipe item: ' + error);
+        }
+    }
+
     public static async getIngredientById(ingredientId: number): Promise<Ingredient> {
-        const ingredient = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
+        const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
         if (!ingredient) throw new Error('Ingredient not found');
 
         const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
@@ -83,6 +107,7 @@ export class DatabaseService {
         };
     }
 }
+
 await DatabaseService.initialize('./src/lib/server/database.db').catch((error) => {
     console.error(`Error initializing database: ${error}`);
 });

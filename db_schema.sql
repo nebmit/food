@@ -3,11 +3,6 @@ CREATE TABLE Recipes (
     RecipeID INTEGER PRIMARY KEY,
     RecipeName TEXT NOT NULL,
     MainVersionID INTEGER,
-    PortionQuantity REAL NOT NULL,
-    PortionDescriptor TEXT NOT NULL,
-    EstimatedTime INTEGER NOT NULL,
-    ComplexityRating INTEGER CHECK (ComplexityRating BETWEEN 1 AND 5),
-    MayhemRating INTEGER CHECK (MayhemRating BETWEEN 1 AND 5),
     FOREIGN KEY (MainVersionID) REFERENCES RecipeVersions(RecipeVersionID)
 );
 
@@ -16,6 +11,12 @@ CREATE TABLE RecipeVersions (
     RecipeVersionID INTEGER PRIMARY KEY,
     ParentVersionID INTEGER,
     VersionComment TEXT,
+    PortionQuantity REAL NOT NULL,
+    PortionDescriptor TEXT NOT NULL,
+    ActiveTimeMinutes INTEGER NOT NULL,
+    PassiveTimeMinutes INTEGER NOT NULL,
+    ComplexityRating INTEGER CHECK (ComplexityRating BETWEEN 1 AND 5),
+    MayhemRating INTEGER CHECK (MayhemRating BETWEEN 1 AND 5),
     FOREIGN KEY (ParentVersionID) REFERENCES RecipeVersions(RecipeVersionID)
 );
 
@@ -29,14 +30,30 @@ CREATE TABLE IF NOT EXISTS Ingredients (
 );
 
 -- RecipeIngredients Table
-CREATE TABLE IF NOT EXISTS RecipeIngredients (
-    RecipeIngredientID INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS RecipeVersionIngredients (
+    RecipeVersionIngredientID INTEGER PRIMARY KEY,
     RecipeVersionID INTEGER NOT NULL,
     IngredientID INTEGER NOT NULL,
     Quantity REAL NOT NULL,
     Measurement TEXT,
     FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID),
     FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
+);
+
+-- Items Table
+CREATE TABLE IF NOT EXISTS Items (
+    ItemID INTEGER PRIMARY KEY,
+    ItemName TEXT NOT NULL UNIQUE
+);
+
+-- RecipeVersionItems Table
+CREATE TABLE IF NOT EXISTS RecipeVersionItems (
+    RecipeVersionItemID INTEGER PRIMARY KEY,
+    RecipeVersionID INTEGER NOT NULL,
+    ItemID INTEGER NOT NULL,
+    Quantity INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID),
+    FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
 );
 
 -- Instructions Table
@@ -64,71 +81,74 @@ CREATE TABLE IF NOT EXISTS IngredientTagAssignment (
     FOREIGN KEY (TagID) REFERENCES IngredientTags(TagID)
 );
 
--- Insert data into Recipes Table
-INSERT INTO Recipes (RecipeID, RecipeName, MainVersionID, PortionQuantity, PortionDescriptor, EstimatedTime, ComplexityRating, MayhemRating)
-VALUES
-    (1, 'Pasta Bolognese', 1, 4, 'Servings', 45, 3, 2),
-    (2, 'Tacos', 2, 4, 'Servings', 30, 2, 1),
-    (3, 'Chocolate Cake', 3, 1, 'Cake', 90, 4, 5);
+-- Recipes Table
+INSERT INTO Recipes (RecipeID, RecipeName, MainVersionID) 
+VALUES (1, 'Spaghetti Bolognese', 1);
 
--- Insert data into RecipeVersions Table
-INSERT INTO RecipeVersions (RecipeVersionID, ParentVersionID, VersionComment)
-VALUES
-    (1, NULL, 'Initial version'),
-    (2, NULL, 'Initial version'),
-    (3, NULL, 'Initial version'),
-    (4, 1, 'Reduced salt'),
-    (5, 2, 'More spicy');
+-- RecipeVersions Table
+INSERT INTO RecipeVersions (RecipeVersionID, ParentVersionID, VersionComment, PortionQuantity, PortionDescriptor, ActiveTimeMinutes, PassiveTimeMinutes, ComplexityRating, MayhemRating)
+VALUES (1, NULL, 'Initial version', 4, 'servings', 30, 10, 2, 1);
 
--- Insert data into Ingredients Table
-INSERT INTO Ingredients (IngredientID, IngredientName, IsRecipe, RecipeID)
-VALUES
-    (1, 'Spaghetti', 0, NULL),
-    (2, 'Ground Beef', 0, NULL),
-    (3, 'Tomato Sauce', 0, NULL),
-    (4, 'Taco Shell', 0, NULL),
-    (5, 'Chicken', 0, NULL),
-    (6, 'Chocolate', 0, NULL),
-    (7, 'Flour', 0, NULL),
-    (8, 'Egg', 0, NULL);
+-- Ingredients Table
+INSERT INTO Ingredients (IngredientID, IngredientName)
+VALUES (1, 'Spaghetti'), 
+       (2, 'Ground Beef'), 
+       (3, 'Tomato Sauce'), 
+       (4, 'Onion'),
+       (5, 'Garlic'), 
+       (6, 'Salt'), 
+       (7, 'Black Pepper'), 
+       (8, 'Olive Oil');
 
--- Insert data into RecipeIngredients Table
-INSERT INTO RecipeIngredients (RecipeIngredientID, RecipeVersionID, IngredientID, Quantity, Measurement)
-VALUES
-    (1, 1, 1, 400, 'grams'),
-    (2, 1, 2, 250, 'grams'),
-    (3, 1, 3, 400, 'ml'),
-    (4, 2, 4, 8, 'pieces'),
-    (5, 2, 5, 300, 'grams'),
-    (6, 3, 6, 200, 'grams'),
-    (7, 3, 7, 300, 'grams'),
-    (8, 3, 8, 4, 'pieces');
+-- RecipeIngredients Table
+INSERT INTO RecipeVersionIngredients (RecipeVersionIngredientID, RecipeVersionID, IngredientID, Quantity, Measurement)
+VALUES (1, 1, 1, 400, 'grams'),
+       (2, 1, 2, 300, 'grams'),
+       (3, 1, 3, 400, 'ml'),
+       (4, 1, 4, 1, 'whole'),
+       (5, 1, 5, 2, 'cloves'),
+       (6, 1, 6, 1, 'tsp'),
+       (7, 1, 7, 0.5, 'tsp'),
+       (8, 1, 8, 2, 'tbsp');
 
--- Insert data into Instructions Table
+-- Items Table
+INSERT INTO Items (ItemID, ItemName)
+VALUES (1, 'Pot'), 
+       (2, 'Frying Pan'), 
+       (3, 'Knife'), 
+       (4, 'Cutting Board');
+
+-- RecipeVersionItems Table
+INSERT INTO RecipeVersionItems (RecipeVersionItemID, RecipeVersionID, ItemID, Quantity)
+VALUES (1, 1, 1, 1),
+       (2, 1, 2, 1),
+       (3, 1, 3, 1),
+       (4, 1, 4, 1);
+
+-- Instructions Table
 INSERT INTO Instructions (InstructionID, RecipeVersionID, StepNumber, StepDetail)
-VALUES
-    (1, 1, 1, 'Boil the spaghetti'),
-    (2, 1, 2, 'Cook the ground beef'),
-    (3, 1, 3, 'Mix with tomato sauce'),
-    (4, 2, 1, 'Prepare taco shells'),
-    (5, 2, 2, 'Cook the chicken'),
-    (6, 3, 1, 'Mix the flour and chocolate'),
-    (7, 3, 2, 'Add eggs'),
-    (8, 3, 3, 'Bake the cake');
+VALUES (1, 1, 1, 'Dice the onion and garlic.'),
+       (2, 1, 2, 'Heat the olive oil in a frying pan.'),
+       (3, 1, 3, 'Fry the onion and garlic until translucent.'),
+       (4, 1, 4, 'Add the ground beef and cook until browned.'),
+       (5, 1, 5, 'Add the tomato sauce, salt, and black pepper. Simmer for 10 minutes.'),
+       (6, 1, 6, 'In a separate pot, boil water and cook the spaghetti as per the package instructions.'),
+       (7, 1, 7, 'Drain the spaghetti and serve with the sauce on top.');
 
--- Insert data into IngredientTags Table
+-- IngredientTags Table (just as an example of categorization)
 INSERT INTO IngredientTags (TagID, TagName)
-VALUES
-    (1, 'Vegetarian'),
-    (2, 'Gluten-Free'),
-    (3, 'Dairy-Free');
+VALUES (1, 'Carb'), 
+       (2, 'Meat'), 
+       (3, 'Vegetable'), 
+       (4, 'Seasoning');
 
--- Insert data into IngredientTagAssignment Table
+-- IngredientTagAssignment Table
 INSERT INTO IngredientTagAssignment (AssignmentID, IngredientID, TagID)
-VALUES
-    (1, 1, 2),
-    (2, 3, 1),
-    (3, 4, 2),
-    (4, 5, 3),
-    (5, 6, 1),
-    (6, 8, 1);
+VALUES (1, 1, 1), 
+       (2, 2, 2), 
+       (3, 3, 3), 
+       (4, 4, 3),
+       (5, 5, 3), 
+       (6, 6, 4), 
+       (7, 7, 4), 
+       (8, 8, 4);

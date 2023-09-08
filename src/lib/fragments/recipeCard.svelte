@@ -4,9 +4,11 @@
 
     export let recipe: Recipe;
 
+    let recipeVersion = recipe.MainVersion;
+
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
-    const complexity = recipe.ComplexityRating ?? 0;
-    const mayhem = recipe.MayhemRating ?? 0;
+    const complexity = recipeVersion.ComplexityRating ?? 0;
+    const mayhem = recipeVersion.MayhemRating ?? 0;
 
     function openRecipeLink() {
         goto("/recipe/" + recipe.RecipeID);
@@ -36,7 +38,8 @@
         <div
             class="absolute bottom-0 right-0 p-2 rounded-tl-lg bg-slate-700 bg-opacity-80 text-white text-xs font-bold"
         >
-            ~ {recipe.EstimatedTime} min
+            ~ {recipeVersion.ActiveTimeMinutes +
+                recipeVersion.PassiveTimeMinutes} min
         </div>
     </div>
     <div class="p-4">

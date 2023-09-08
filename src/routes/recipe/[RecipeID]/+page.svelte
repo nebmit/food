@@ -4,8 +4,9 @@
 
     export let data: { recipe: Recipe };
     const recipe = data.recipe;
-    const instructions: Instruction[] = recipe.MainVersion.Instructions;
-    const ingredients: RecipeIngredient[] = recipe.MainVersion.Ingredients;
+    const recipeVersion = recipe.MainVersion;
+    const instructions: Instruction[] = recipeVersion.Instructions;
+    const ingredients: RecipeIngredient[] = recipeVersion.Ingredients;
 
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
 </script>
@@ -36,30 +37,37 @@
         >
             <div class="flex flex-wrap items-center space-x-2">
                 <div class="flex items-center">
-                    {recipe.PortionQuantity}
-                    {recipe.PortionDescriptor}
+                    {recipeVersion.PortionQuantity}
+                    {recipeVersion.PortionDescriptor}
                 </div>
                 <span>|</span>
                 <div class="flex items-center">
-                    ~ {recipe.EstimatedTime} Minutes
+                    ~ {recipeVersion.ActiveTimeMinutes +
+                        recipeVersion.PassiveTimeMinutes} Minutes
                 </div>
                 <span>|</span>
-                {#if recipe.ComplexityRating}
+                {#if recipeVersion.ComplexityRating}
                     <div class="text-cyan-500">
                         Complexity
                         {#each Array(5).fill(null) as _, i}
                             <span
-                                >{i < recipe.ComplexityRating ? "★" : "☆"}</span
+                                >{i < recipeVersion.ComplexityRating
+                                    ? "★"
+                                    : "☆"}</span
                             >
                         {/each}
                     </div>
                     <span>|</span>
                 {/if}
-                {#if recipe.MayhemRating}
+                {#if recipeVersion.MayhemRating}
                     <div class="text-purple-500">
                         Mayhem
                         {#each Array(5).fill(null) as _, i}
-                            <span>{i < recipe.MayhemRating ? "★" : "☆"}</span>
+                            <span
+                                >{i < recipeVersion.MayhemRating
+                                    ? "★"
+                                    : "☆"}</span
+                            >
                         {/each}
                     </div>
                 {/if}

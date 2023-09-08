@@ -2,17 +2,18 @@ export interface RecipeRaw {
     RecipeID: number;
     RecipeName: string;
     MainVersionID: number;
-    PortionQuantity: number;
-    PortionDescriptor: string;
-    EstimatedTime: number;
-    ComplexityRating?: number; // Optional because it can be NULL
-    MayhemRating?: number; // Optional because it can be NULL
 }
 
 export interface RecipeVersionRaw {
     RecipeVersionID: number;
     ParentVersionID?: number; // Optional because it can be NULL
     VersionComment?: string; // Optional because it can be NULL
+    PortionQuantity: number;
+    PortionDescriptor: string;
+    ActiveTimeMinutes: number;
+    PassiveTimeMinutes: number;
+    ComplexityRating?: number; // Optional because it can be NULL
+    MayhemRating?: number; // Optional because it can be NULL
 }
 
 export interface IngredientRaw {
@@ -22,12 +23,24 @@ export interface IngredientRaw {
     RecipeID?: number; // Optional because it can be NULL
 }
 
-export interface RecipeIngredientRaw {
-    RecipeIngredientID: number;
+export interface RecipeVersionIngredientRaw {
+    RecipeVersionIngredientID: number;
     RecipeVersionID: number;
     IngredientID: number;
     Quantity: number;
     Measurement?: string; // Optional because it can be NULL
+}
+
+export interface RequiredItemRaw {
+    ItemID: number;
+    ItemName: string;
+}
+
+export interface RecipeVersionItemRaw {
+    RecipeVersionItemID: number;
+    RecipeVersionID: number;
+    ItemID: number;
+    Quantity: number;
 }
 
 export interface InstructionRaw {
