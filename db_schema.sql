@@ -127,7 +127,7 @@ VALUES (1, 1, 1, 1),
 
 -- Instructions Table
 INSERT INTO Instructions (InstructionID, RecipeVersionID, StepNumber, StepDetail)
-VALUES (1, 1, 1, 'Dice the onion and garlic.'),
+VALUES (1, 1, 1, 'Dice the {Onion} and {1:Garlic}.'),
        (2, 1, 2, 'Heat the olive oil in a frying pan.'),
        (3, 1, 3, 'Fry the onion and garlic until translucent.'),
        (4, 1, 4, 'Add the ground beef and cook until browned.'),
