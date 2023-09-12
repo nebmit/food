@@ -1,12 +1,19 @@
 <script lang="ts">
     import Navbar from "$lib/fragments/navbar.svelte";
-    import type { Instruction, Recipe, RecipeIngredient } from "$lib/types";
+    import type {
+        Instruction,
+        Recipe,
+        RecipeIngredient,
+        RecipeItem,
+    } from "$lib/types";
 
     export let data: { recipe: Recipe };
     const recipe = data.recipe;
     const recipeVersion = recipe.MainVersion;
-    const instructions: Instruction[] = recipeVersion.Instructions;
+
     const ingredients: RecipeIngredient[] = recipeVersion.Ingredients;
+    const instructions: Instruction[] = recipeVersion.Instructions;
+    const items: RecipeItem[] = recipeVersion.Items;
 
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
 
@@ -109,8 +116,8 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <!-- Ingredients List -->
-        <div class="p-4">
+        <div class="p-4 col-span-1">
+            <!-- Ingredients List -->
             <h2 class="text-xl font-semibold mb-2">Ingredients</h2>
             <div class="grid grid-cols-2 gap-0">
                 {#each ingredients as ingredient}
@@ -120,6 +127,19 @@
                     <div class="col-span-1">
                         {ingredient.Quantity}
                         {ingredient.Measurement ? ingredient.Measurement : ""}
+                    </div>
+                {/each}
+            </div>
+
+            <!-- Items List -->
+            <h2 class="text-xl font-semibold mb-2 mt-8">Items</h2>
+            <div class="grid grid-cols-2 gap-0">
+                {#each items as item}
+                    <div class="col-span-1">
+                        {item.Item.ItemName}
+                    </div>
+                    <div class="col-span-1">
+                        {item.Quantity}
                     </div>
                 {/each}
             </div>
