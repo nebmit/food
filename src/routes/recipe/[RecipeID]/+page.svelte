@@ -6,6 +6,7 @@
         RecipeIngredient,
         RecipeItem,
     } from "$lib/types";
+    import Modal from "./modal.svelte";
 
     export let data: { recipe: Recipe };
     const recipe = data.recipe;
@@ -16,6 +17,13 @@
     const items: RecipeItem[] = recipeVersion.Items;
 
     const imageUrl = "/images/" + recipe.RecipeID + ".png";
+
+    let showEditModal = false;
+
+    function onSave(image: File, name: String) {
+        // TODO: Save changes to recipe name, image, and version ID here
+        showEditModal = false;
+    }
 
     function parseInstruction(
         instruction: string,
@@ -42,6 +50,15 @@
         );
     }
 </script>
+
+{#if showEditModal}
+    <Modal
+        {imageUrl}
+        recipeName={recipe.RecipeName}
+        {onSave}
+        onCancel={() => (showEditModal = false)}
+    />
+{/if}
 
 <div class="hidden sm:inline">
     <Navbar />
@@ -114,7 +131,7 @@
                 </a>
                 <button
                     class="bg-blue-800 text-white hover:bg-blue-600 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
-                    >Edit</button
+                    on:click={() => (showEditModal = true)}>Edit</button
                 >
             </div>
         </div>
