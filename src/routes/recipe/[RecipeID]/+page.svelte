@@ -104,8 +104,14 @@
                     </div>
                 {/if}
             </div>
-            <!-- Your last element here -->
-            <div class="hidden md:flex">
+
+            <!-- Recipe Version -->
+            <div class="hidden md:flex items-center">
+                <a
+                    href="/version/{recipeVersion.RecipeVersionID}"
+                    class="text-blue-400 hover:text-blue-600 transition duration-700 ease-in-out mr-4"
+                    >#{recipeVersion.RecipeVersionID}
+                </a>
                 <button
                     class="bg-blue-800 text-white hover:bg-blue-600 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
                     >Edit</button
