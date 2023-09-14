@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { deserialize } from "$app/forms";
     import Navbar from "$lib/fragments/navbar.svelte";
     import type {
         Instruction,
@@ -16,13 +17,61 @@
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
 
-    const imageUrl = "/images/" + recipe.RecipeID + ".png";
+    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".png";
 
     let showEditModal = false;
 
-    function onSave(image: File, name: String) {
-        // TODO: Save changes to recipe name, image, and version ID here
-        showEditModal = false;
+    async function onSave(image: File, name: string): Promise<string | void> {
+        console.log(image, name);
+
+        name = name.trim();
+
+        if (image && (image.type !== "image/png" || image.size > 10000000)) {
+            return "Please provide a valid image file less than 10MB in size";
+        }
+        if (
+            name &&
+            (name.length > 50 || name.length < 3 || name.match(/[^a-zA-Z0-9 ]/))
+        ) {
+            return "Please provide a valid name between 3 and 50 characters";
+        }
+
+        const formData = new FormData();
+        if (image) formData.append("image", image);
+        if (name) formData.append("name", name);
+
+        if ([...formData.entries()].length === 0) {
+            showEditModal = false;
+            return;
+        }
+
+        formData.append("recipeID", recipe.RecipeID.toString());
+
+        try {
+            const response = await fetch("?/modifyRecipe", {
+                method: "POST",
+                body: formData,
+            });
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            const data = await response.text();
+
+            const result = deserialize(data);
+            if (result.type === "success") {
+                location.reload();
+                showEditModal = false;
+            } else {
+                console.error("There was a problem with the server:", result);
+                return "Something went wrong. Please try again.";
+            }
+        } catch (error: any) {
+            console.error(
+                "There was a problem with the fetch operation:",
+                error.message
+            );
+            return error.message;
+        }
     }
 
     function parseInstruction(

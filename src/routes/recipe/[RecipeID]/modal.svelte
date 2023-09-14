@@ -1,12 +1,18 @@
 <script lang="ts">
     export let imageUrl: string = "";
     export let recipeName: string = "";
-    export let onSave: (image: File, name: string) => string | void = () => {};
+    export let onSave: (
+        image: File,
+        name: string
+    ) => Promise<string | void> = async () => {};
     export let onCancel: () => void = () => {};
 
-    let imageFile: File;
+    let newImageFile: File;
+    let newRecipeName: string = "";
     let previewImageUrl: string;
     let errorMessage = "";
+
+    let fileInput: HTMLInputElement;
 
     function handleFileChange(event: Event) {
         const target = event.target as HTMLInputElement;
@@ -14,8 +20,8 @@
 
         errorMessage = "";
 
-        imageFile = target.files[0];
-        if (!imageFile.type.startsWith("image/")) {
+        newImageFile = target.files[0];
+        if (!newImageFile.type.startsWith("image/")) {
             errorMessage = "File must be an image";
             return;
         }
@@ -33,7 +39,7 @@
             errorMessage = "Error reading the file";
         };
 
-        reader.readAsDataURL(imageFile);
+        reader.readAsDataURL(newImageFile);
     }
 </script>
 
@@ -72,7 +78,8 @@
                         id="recipeName"
                         name="recipeName"
                         class="mt-1 p-2 w-full border rounded-md"
-                        bind:value={recipeName}
+                        placeholder={recipeName}
+                        bind:value={newRecipeName}
                     />
                 </div>
                 <div class="mb-4">
@@ -81,14 +88,20 @@
                         class="block text-sm font-medium text-gray-700"
                         >Recipe Image:</label
                     >
-                    <img
-                        src={previewImageUrl || imageUrl}
-                        alt={recipeName}
-                        class="w-full h-40 object-cover mb-2"
-                    />
-
+                    <button
+                        aria-label="Click to upload a new image"
+                        class="w-full h-40"
+                        on:click={() => fileInput.click()}
+                    >
+                        <img
+                            src={previewImageUrl || imageUrl}
+                            alt={recipeName}
+                            class="w-full h-full object-cover mb-2"
+                        />
+                    </button>
                     <div class="relative inline-block">
                         <input
+                            bind:this={fileInput}
                             type="file"
                             id="recipeImage"
                             name="recipeImage"
@@ -99,7 +112,7 @@
                         <label
                             for="recipeImage"
                             class="px-4 py-2 select-none outline-slate-600 outline-1 text-gray-800 font-medium rounded-bl cursor-pointer hover:outline transition duration-200"
-                            >Upload Image...
+                            >Change Image...
                         </label>
                     </div>
                 </div>
@@ -111,8 +124,9 @@
                 <button
                     type="button"
                     class="bg-blue-800 text-white hover:bg-blue-600 rounded px-4 py-2 font-semibold transition duration-200 ease-in-out"
-                    on:click={() => {
-                        errorMessage = onSave(imageFile, recipeName) ?? "";
+                    on:click={async () => {
+                        errorMessage =
+                            (await onSave(newImageFile, newRecipeName)) ?? "";
                     }}
                 >
                     Save

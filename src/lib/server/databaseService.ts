@@ -15,6 +15,8 @@ export class DatabaseService {
         DatabaseService.db = await open({ filename: dbName, driver: sqlite3.Database });
     }
 
+
+    // Public GET methods
     public static async getRecipes(limit = 10): Promise<Recipe[]> {
         const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes LIMIT ?`, limit);
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
@@ -59,6 +61,33 @@ export class DatabaseService {
         };
     }
 
+    public static async getIngredientById(ingredientId: number): Promise<Ingredient> {
+        const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
+        if (!ingredient) throw new Error('Ingredient not found');
+
+        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
+                                       JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
+                                       WHERE IngredientTagAssignment.IngredientID = ?`, ingredientId);
+
+        return {
+            IngredientID: ingredient.IngredientID,
+            IngredientName: ingredient.IngredientName,
+            IsRecipe: ingredient.IsRecipe,
+            RecipeID: ingredient.RecipeID,
+            Tags: tags
+        };
+    }
+
+
+    // Public PATCH methods
+    public static async patchRecipe(recipeId: number, newRecipeData: Partial<Recipe>): Promise<void> {
+        const setters = Object.keys(newRecipeData).map(key => `${key} = ?`).join(', ');
+
+        await DatabaseService.db.run(`UPDATE Recipes SET ${setters} WHERE RecipeID = ?`, ...Object.values(newRecipeData), recipeId);
+    }
+
+
+    // Private methods
     private static async getRecipeIngredient(recipeIngredient: RecipeVersionIngredientRaw): Promise<RecipeIngredient> {
         try {
             const ingredient = await DatabaseService.getIngredientById(recipeIngredient.IngredientID);
@@ -88,23 +117,6 @@ export class DatabaseService {
         } catch (error) {
             throw new Error('Error getting recipe item: ' + error);
         }
-    }
-
-    public static async getIngredientById(ingredientId: number): Promise<Ingredient> {
-        const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
-        if (!ingredient) throw new Error('Ingredient not found');
-
-        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
-                                       JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
-                                       WHERE IngredientTagAssignment.IngredientID = ?`, ingredientId);
-
-        return {
-            IngredientID: ingredient.IngredientID,
-            IngredientName: ingredient.IngredientName,
-            IsRecipe: ingredient.IsRecipe,
-            RecipeID: ingredient.RecipeID,
-            Tags: tags
-        };
     }
 }
 

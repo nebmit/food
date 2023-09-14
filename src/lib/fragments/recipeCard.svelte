@@ -6,7 +6,7 @@
 
     let recipeVersion = recipe.MainVersion;
 
-    const imageUrl = "/images/" + recipe.RecipeID + ".png";
+    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".png";
     const complexity = recipeVersion.ComplexityRating ?? 0;
     const mayhem = recipeVersion.MayhemRating ?? 0;
 
