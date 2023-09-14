@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import Logo from "$lib/fragments/logo.svelte";
+    import Navbar from "$lib/fragments/navbar.svelte";
     import RecipeCard from "$lib/fragments/recipeCard.svelte";
     import { glitch } from "$lib/transitions";
     import type { Recipe } from "$lib/types";
@@ -53,6 +54,10 @@
     }
 </script>
 
+{#if content}
+    <Navbar />
+{/if}
+
 <div class="container mx-auto">
     <div class="flex flex-col h-screen justify-center">
         {#if logo}
@@ -71,7 +76,7 @@
             </div>
         {:else if content}
             <div
-                class="flex flex-col space-y-4 w-full mb-60"
+                class="flex flex-col space-y-4 w-full mb-96"
                 in:glitch={{
                     displacement: 75,
                     duration: contentInDuration,
