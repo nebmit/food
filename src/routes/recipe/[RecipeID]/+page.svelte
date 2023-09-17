@@ -1,6 +1,7 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
     import Navbar from "$lib/fragments/navbar.svelte";
+    import { parseInstruction } from "$lib/parser";
     import type {
         Instruction,
         Recipe,
@@ -72,31 +73,6 @@
             );
             return error.message;
         }
-    }
-
-    function parseInstruction(
-        instruction: string,
-        ingredients: RecipeIngredient[]
-    ): string {
-        return instruction.replace(
-            /\{(?:(\d+(\.\d+)?):)?([\w\s]+)\}/g,
-            (match, percentage, _, ingredientName) => {
-                const ingredient = ingredients.find(
-                    (ing) => ing.Ingredient.IngredientName === ingredientName
-                );
-                if (ingredient) {
-                    if (percentage) {
-                        const calculatedQuantity =
-                            ingredient.Quantity * parseFloat(percentage);
-                        return `${calculatedQuantity} ${
-                            ingredient.Measurement || ""
-                        } ${ingredientName}`; // If percentage, also return quantity and measurement.
-                    }
-                    return ingredientName; // If no percentage, just return the ingredient name.
-                }
-                return match; // If no ingredient found, return the match unchanged.
-            }
-        );
     }
 </script>
 
