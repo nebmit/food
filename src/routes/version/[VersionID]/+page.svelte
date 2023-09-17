@@ -6,7 +6,6 @@
         RecipeItem,
         RecipeVersion,
     } from "$lib/types";
-    import TextBox from "./textBox.svelte";
 
     export let data: { recipeVersion: RecipeVersion };
     const recipeVersion = data.recipeVersion;
@@ -104,10 +103,10 @@
                 {#each recipeVersion.Instructions as instruction}
                     <span class="col-span-1">Step {instruction.StepNumber}</span
                     >
-                    <TextBox
-                        initialText={instruction.StepDetail}
-                        recipeIngredients={ingredients}
-                        onChange={(text) => console.log(text)}
+                    <textarea
+                        class="col-span-1"
+                        bind:value={instruction.StepDetail}
+                        placeholder="Instruction"
                     />
                 {/each}
             </div>
