@@ -59,9 +59,9 @@
 {/if}
 
 <div class="container mx-auto">
-    <div class="flex flex-col h-screen justify-center">
+    <div class="flex flex-col h-full justify-center">
         {#if logo}
-            <div class="flex justify-center">
+            <div class="flex h-screen justify-center">
                 <Logo
                     width="30%"
                     stroke="#8C8C8D"
@@ -76,7 +76,7 @@
             </div>
         {:else if content}
             <div
-                class="flex flex-col space-y-4 w-full mb-96"
+                class="flex flex-col space-y-4 w-full mt-36 mb-96"
                 in:glitch={{
                     displacement: 75,
                     duration: contentInDuration,
@@ -101,7 +101,9 @@
                         explore
                     </button>
                 </div>
-                <div class="flex flex-row justify-center space-x-8 pt-12">
+                <div
+                    class="hidden sm:flex flex-row justify-center space-x-8 pt-12"
+                >
                     {#each data.randomRecipes as recipe}
                         <RecipeCard {recipe} />
                     {/each}

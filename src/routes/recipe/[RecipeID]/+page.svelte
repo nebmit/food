@@ -155,7 +155,7 @@
                     >#{recipeVersion.RecipeVersionID}
                 </a>
                 <button
-                    class="bg-blue-800 text-white hover:bg-blue-600 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
+                    class="bg-blue-700 text-white hover:bg-blue-800 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
                     on:click={() => (showEditModal = true)}>Edit</button
                 >
             </div>

@@ -1,6 +1,5 @@
 <script lang="ts">
     let show = false;
-
     function toggleMenu() {
         show = !show;
     }
@@ -21,21 +20,56 @@
     ];
 </script>
 
-<div style="background-color: var(--bg-color); z-index: 1;">
+<div style="z-index: 1;">
     <!-- Desktop Navbar -->
-    <div class="hidden sm:flex justify-center items-center h-16 text-black">
-        {#each buttons as button}
+    <div class="hidden sm:flex items-center h-16">
+        <!-- Left Element -->
+        <div class="flex-shrink-0 w-1/4 pl-4">
             <a
-                href={button.link}
-                class="mx-4 text-lg transition-all duration-300 ease-in-out hover:text-gray-700 custom-underline"
+                href="/create"
+                class=" flex px-2 py-1 rounded w-fit transition-all duration-200 hover:bg-gray-200"
+                aria-label="Create a new recipe"
             >
-                {button.name}
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                    stroke="currentColor"
+                >
+                    <path
+                        d="M4 12H20M12 4V20"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+                <span class="pl-1">Create</span>
             </a>
-        {/each}
+        </div>
+
+        <!-- Centered Elements -->
+        <div class="flex-grow flex justify-center">
+            {#each buttons as button}
+                <a
+                    href={button.link}
+                    class="mx-4 text-lg transition-all duration-300 ease-in-out hover:text-gray-700 custom-underline"
+                >
+                    {button.name}
+                </a>
+            {/each}
+        </div>
+
+        <!-- Right Element -->
+        <div class="flex-shrink-0 w-1/4 pr-4 text-right">
+            <a href="/404" class="hover:text-gray-700"> Login </a>
+        </div>
     </div>
 
     <!-- Mobile Navbar -->
-    <div class="sm:hidden flex justify-end items-center h-16 text-black">
+    <div class="sm:hidden flex justify-end items-center h-16">
+        <a href="/404" class="hover:text-gray-700"> Login </a>
         <button class="mx-2" on:click={toggleMenu}>
             <svg
                 class="w-6 h-6"
@@ -53,7 +87,7 @@
         </button>
     </div>
     <div
-        class="sm:hidden flex flex-col items-center text-black {show
+        class="sm:hidden flex flex-col items-center {show
             ? 'expand-transition'
             : 'collapse-transition'}"
     >
