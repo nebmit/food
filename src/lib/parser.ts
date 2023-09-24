@@ -4,6 +4,15 @@ export function parseInstruction(
     instruction: string,
     ingredients: RecipeIngredient[]
 ): string {
+    return parseInstructionScaled(instruction, ingredients, 1);
+}
+
+
+export function parseInstructionScaled(
+    instruction: string,
+    ingredients: RecipeIngredient[],
+    scalingFactor: number
+): string {
     return instruction.replace(
         /\{(?:(\d+(\.\d+)?):)?([\w\s]+)\}/g,
         (match, percentage, _, ingredientName) => {
@@ -12,10 +21,9 @@ export function parseInstruction(
             );
             if (ingredient) {
                 if (percentage) {
-                    const calculatedQuantity =
-                        ingredient.Quantity * parseFloat(percentage);
-                    return `${calculatedQuantity} ${ingredient.Measurement || ""
-                        } ${ingredientName}`; // If percentage, also return quantity and measurement.
+                    const adjustedQuantity = ingredient.Quantity * scalingFactor;
+                    const calculatedQuantity = adjustedQuantity * parseFloat(percentage);
+                    return `${calculatedQuantity} ${ingredient.Measurement || ""} ${ingredientName}`; // If percentage, also return quantity and measurement.
                 }
                 return ingredientName; // If no percentage, just return the ingredient name.
             }

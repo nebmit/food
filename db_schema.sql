@@ -95,7 +95,7 @@ VALUES (1, NULL, 'Initial version', 4, 'servings', 30, 0, 2, 1),
 
 -- Ingredients Table
 INSERT INTO Ingredients (IngredientID, IngredientName)
-VALUES (1, 'Cooked White Rice'),
+VALUES (1, 'White Rice'),
        (2, 'Chicken Breast'),
        (3, 'Carrot'),
        (4, 'Bell Pepper'),
@@ -117,8 +117,7 @@ VALUES (1, 'Cooked White Rice'),
        (20, 'Worcestershire Sauce'),
        (21, 'Potato'),
        (22, 'Parmesan Cheese'),
-       (23, 'Salt'),
-       (24, 'Black Pepper');
+       (23, 'Minced Garlic');
 
 -- RecipeVersionIngredients Table
 INSERT INTO RecipeVersionIngredients (RecipeVersionIngredientID, RecipeVersionID, IngredientID, Quantity, Measurement)
@@ -144,8 +143,8 @@ VALUES (1, 1, 1, 400, 'grams'),
        (20, 2, 20, 1, 'tsp'),
        (21, 3, 21, 4, 'whole'),
        (22, 3, 22, 50, 'grams'),
-       (23, 3, 23, 1, 'tsp'),
-       (24, 3, 24, 0.5, 'tsp');
+       (23, 3, 23, 2, 'tbsp'),
+       (24, 3, 16, 2, 'tbsp');
 
 -- Items Table
 INSERT INTO Items (ItemID, ItemName)
@@ -172,29 +171,29 @@ VALUES (1, 1, 1, 1),
 -- Instructions Table
 INSERT INTO Instructions (InstructionID, RecipeVersionID, StepNumber, StepDetail)
 -- Instructions for Chicken Fried Rice
-VALUES (1, 1, 1, 'Heat 1 tablespoon of {Vegetable Oil} in a large skillet or wok over medium-high heat.'),
+VALUES (1, 1, 1, 'Heat {0.25:Vegetable Oil} in a large skillet or wok over medium-high heat.'),
        (2, 1, 2, 'Add the {Chicken Breast} cubes, seasoning them with salt and pepper. Cook until no longer pink. Remove and set aside.'),
-       (3, 1, 3, 'In the same skillet, add another tablespoon of {Vegetable Oil}. Add {Garlic}, {Carrot}, and {Bell Pepper}. Sauté for 2-3 minutes.'),
-       (4, 1, 4, 'Add the {Frozen Peas} and cook for another 2 minutes.'),
-       (5, 1, 5, 'Push the vegetables to one side of the skillet. Pour the beaten {Egg} into the other side and scramble.'),
-       (6, 1, 6, 'Add the {Cooked White Rice} to the skillet, mixing it with the vegetables and eggs.'),
-       (7, 1, 7, 'Pour {Soy Sauce} over the rice mixture. Add the cooked chicken back into the skillet.'),
+       (3, 1, 3, 'In the same skillet, add {0.25:Vegetable Oil}. Add {1:Garlic}, {1:Carrot}, and {1:Bell Pepper}. Sauté for 2-3 minutes.'),
+       (4, 1, 4, 'Add {1:Frozen Peas} and cook for another 2 minutes.'),
+       (5, 1, 5, 'Push the vegetables to one side of the skillet. Pour {1:Egg} into the other side and scramble.'),
+       (6, 1, 6, 'Add the {1:White Rice} to the skillet, mixing it with the vegetables and eggs.'),
+       (7, 1, 7, 'Pour {1:Soy Sauce} over the rice mixture. Add the cooked chicken back into the skillet.'),
        (8, 1, 8, 'Stir everything together and cook for another 2-3 minutes.'),
-       (9, 1, 9, 'Optional: Garnish with chopped {Green Onions}. Serve hot.'),
 -- Instructions for Gourmet Burger
        (10, 2, 1, 'Preheat your grill or stovetop grilling pan over medium-high heat.'),
        (11, 2, 2, 'Mix together all the ingredients for the sauce in a small bowl. Set aside.'),
-       (12, 2, 3, 'Form the {Ground Beef} into 4 burger patties. Make a small indent in the center of each patty.'),
-       (13, 2, 4, 'Drizzle {Olive Oil} over the patties and season both sides with {Salt} and {Black Pepper}.'),
+       (12, 2, 3, 'Form the {1:Ground Beef} into 4 burger patties. Make a small indent in the center of each patty.'),
+       (13, 2, 4, 'Drizzle {Olive Oil} over the patties and season both sides with Salt and Black Pepper.'),
        (14, 2, 5, 'Place the patties on the preheated grill or pan. Cook for about 4 minutes per side or to your desired doneness.'),
-       (15, 2, 6, 'Just before the burgers are done, place a {Cheddar Cheese} slice on each patty to melt.'),
-       (16, 2, 7, 'Toast the {Burger Bun} on the grill or in a toaster until lightly browned.'),
+       (15, 2, 6, 'Just before the burgers are done, place one {Cheddar Cheese} slice on each patty to melt.'),
+       (16, 2, 7, 'Toast {Burger Bun} until lightly browned.'),
        (17, 2, 8, 'To assemble the burgers, spread the prepared sauce on the bottom half of each bun. Add {Lettuce}, then the burger patty with melted cheese, followed by {Tomato} and {Red Onion} slices.'),
        (18, 2, 9, 'Top with the other half of the bun. Serve immediately.'),
 -- Instructions for Garlic Parmesan Fries
        (19, 3, 1, 'Preheat your oven to 220°C (425°F). Line a baking sheet with parchment paper.'),
-       (20, 3, 2, 'Toss the {Potato} fries with {Olive Oil}, {Minced Garlic}, {Salt}, and {Black Pepper} in a large bowl.'),
-       (21, 3, 3, 'Spread the fries evenly on the prepared baking sheet.'),
-       (22, 3, 4, 'Bake for 20-25 minutes, flipping halfway through, until they are golden and crisp.'),
-       (23, 3, 5, 'Remove the fries from the oven and immediately toss them with {Parmesan Cheese}.'),
-       (24, 3, 6, 'Optional: Garnish with chopped {Parsley} before serving.');
+       (20, 3, 2, 'Cut the {Potato} into 1/2-inch thick slices, then cut each slice into 1/2-inch thick fries.'),
+       (21, 3, 3, 'Toss the slices with {1:Olive Oil}, {1:Minced Garlic}, Salt, and Black Pepper in a large bowl.'),
+       (22, 3, 4, 'Spread the fries evenly on the prepared baking sheet.'),
+       (23, 3, 5, 'Bake for 20-25 minutes, flipping halfway through, until they are golden and crisp.'),
+       (24, 3, 6, 'Remove the fries from the oven and immediately toss them with {1:Parmesan Cheese}.');
+

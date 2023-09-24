@@ -1,7 +1,7 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
     import Navbar from "$lib/fragments/navbar.svelte";
-    import { parseInstruction } from "$lib/parser";
+    import { parseInstructionScaled } from "$lib/parser";
     import type {
         Instruction,
         Recipe,
@@ -21,6 +21,9 @@
     const imageUrl = "/images/recipes/" + recipe.RecipeID + ".png";
 
     let showEditModal = false;
+
+    let selectedPortion = recipeVersion.PortionQuantity;
+    $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
 
     async function onSave(image: File, name: string): Promise<string | void> {
         console.log(image, name);
@@ -104,14 +107,19 @@
     </div>
 
     <!-- Additional Information -->
-    <div class="hidden sm:inline">
+    <div class="hidden md:inline">
         <hr />
         <div
             class="my-4 px-4 text-lg flex flex-wrap justify-between items-center"
         >
             <div class="flex flex-wrap items-center space-x-2">
                 <div class="flex items-center">
-                    {recipeVersion.PortionQuantity}
+                    <input
+                        bind:value={selectedPortion}
+                        type="number"
+                        class="w-16 text-center border border-gray-300 rounded px-2 py-1 mr-2"
+                        min="1"
+                    />
                     {recipeVersion.PortionDescriptor}
                 </div>
                 <span>|</span>
@@ -148,7 +156,7 @@
             </div>
 
             <!-- Recipe Version -->
-            <div class="hidden md:flex items-center">
+            <div class="hidden lg:flex items-center">
                 <a
                     href="/version/{recipeVersion.RecipeVersionID}"
                     class="text-blue-400 hover:text-blue-600 transition duration-700 ease-in-out mr-4"
@@ -165,6 +173,16 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="p-4 col-span-1">
+            <div class="md:hidden mb-4">
+                <input
+                    bind:value={selectedPortion}
+                    type="number"
+                    class="w-16 text-center border border-gray-300 rounded px-2 py-1 mr-2"
+                    min="1"
+                />
+                {recipeVersion.PortionDescriptor}
+            </div>
+
             <!-- Ingredients List -->
             <h2 class="text-xl font-semibold mb-2">Ingredients</h2>
             <div class="grid grid-cols-2 gap-0">
@@ -173,7 +191,7 @@
                         {ingredient.Ingredient.IngredientName}
                     </div>
                     <div class="col-span-1">
-                        {ingredient.Quantity}
+                        {ingredient.Quantity * scalingFactor}
                         {ingredient.Measurement ? ingredient.Measurement : ""}
                     </div>
                 {/each}
@@ -205,7 +223,11 @@
                         >
                     </div>
                     <div class="col-span-10">
-                        {parseInstruction(instruction.StepDetail, ingredients)}
+                        {parseInstructionScaled(
+                            instruction.StepDetail,
+                            ingredients,
+                            scalingFactor
+                        )}
                     </div>
                 {/each}
             </div>
