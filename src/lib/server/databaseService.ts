@@ -2,7 +2,8 @@ import type { Database } from 'sqlite';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import type { Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
-import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RequiredItemRaw } from './databaseTypes';
+import { ItemNotFoundException } from '../types';
+import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RecipeVersionRaw, RequiredItemRaw } from './databaseTypes';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -15,16 +16,22 @@ export class DatabaseService {
         DatabaseService.db = await open({ filename: dbName, driver: sqlite3.Database });
     }
 
-
+    // ************ //
     // Public GET methods
+    // ************ //
+
     public static async getRecipes(limit = 10): Promise<Recipe[]> {
         const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes LIMIT ?`, limit);
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
     }
 
+    // GET BY ID methods
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
     public static async getRecipeById(recipeId: number): Promise<Recipe> {
         const recipe: RecipeRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Recipes WHERE RecipeID = ?`, recipeId);
-        if (!recipe) throw new Error('Recipe not found');
+        if (!recipe) throw new ItemNotFoundException('Recipe not found');
 
         return {
             RecipeID: recipe.RecipeID,
@@ -33,9 +40,12 @@ export class DatabaseService {
         };
     }
 
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
     public static async getRecipeVersionById(versionId: number): Promise<RecipeVersion> {
         const version = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, versionId);
-        if (!version) throw new Error('Recipe version not found');
+        if (!version) throw new ItemNotFoundException('Recipe version not found');
 
         const rawIngredients: RecipeVersionIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionIngredients WHERE RecipeVersionID = ?`, versionId);
         const ingredients: RecipeIngredient[] = await Promise.all(rawIngredients.map(DatabaseService.getRecipeIngredient));
@@ -43,7 +53,6 @@ export class DatabaseService {
         const items: RecipeItem[] = await Promise.all(rawItems.map(DatabaseService.getRequiredItem));
 
         const rawInstructions: InstructionRaw[] = await DatabaseService.db.all(`SELECT * FROM Instructions WHERE RecipeVersionID = ?`, versionId);
-
 
         return {
             RecipeVersionID: version.RecipeVersionID,
@@ -61,9 +70,12 @@ export class DatabaseService {
         };
     }
 
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
     public static async getIngredientById(ingredientId: number): Promise<Ingredient> {
         const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
-        if (!ingredient) throw new Error('Ingredient not found');
+        if (!ingredient) throw new ItemNotFoundException('Ingredient not found');
 
         const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
                                        JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
@@ -78,12 +90,148 @@ export class DatabaseService {
         };
     }
 
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
+    public static async getItemById(itemId: number): Promise<RequiredItemRaw> {
+        const item: RequiredItemRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Items WHERE ItemID = ?`, itemId);
+        if (!item) throw new ItemNotFoundException('Item not found');
+
+        return item;
+    }
+
+
+    // GET BY NAME methods
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
+    public static async getIngredientByName(ingredientName: string): Promise<Ingredient> {
+        const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientName = ?`, ingredientName);
+        if (!ingredient) throw new ItemNotFoundException('Ingredient not found');
+
+        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
+                                       JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
+                                       WHERE IngredientTagAssignment.IngredientID = ?`, ingredient.IngredientID);
+
+        return {
+            IngredientID: ingredient.IngredientID,
+            IngredientName: ingredient.IngredientName,
+            IsRecipe: ingredient.IsRecipe,
+            RecipeID: ingredient.RecipeID,
+            Tags: tags
+        };
+    }
+
+    /**
+     * @throws {ItemNotFoundException} if the item is not found
+     */
+    public static async getItemByName(itemName: string): Promise<RequiredItemRaw> {
+        const item: RequiredItemRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Items WHERE ItemName = ?`, itemName);
+        if (!item) throw new ItemNotFoundException('Item not found');
+
+        return item;
+    }
+
 
     // Public PATCH methods
     public static async patchRecipe(recipeId: number, newRecipeData: Partial<Recipe>): Promise<void> {
-        const setters = Object.keys(newRecipeData).map(key => `${key} = ?`).join(', ');
+        const ALLOWED_COLUMNS = ['RecipeName', 'MainVersionID'];
+        const validKeys = Object.keys(newRecipeData).filter(key => ALLOWED_COLUMNS.includes(key));
 
-        await DatabaseService.db.run(`UPDATE Recipes SET ${setters} WHERE RecipeID = ?`, ...Object.values(newRecipeData), recipeId);
+        if (!validKeys.length) {
+            throw new Error("No valid columns provided for update.");
+        }
+
+        const setters = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => newRecipeData[key as keyof Recipe]);
+
+        const query = `UPDATE Recipes SET ${setters} WHERE RecipeID = ?`;
+        await DatabaseService.db.run(query, ...values, recipeId);
+    }
+
+
+    // Public INSERT methods
+    public static async insertRecipe(recipe: Partial<RecipeRaw>): Promise<number> {
+        const filteredRecipe: Partial<RecipeRaw> = this.filterAllowedColumns(['RecipeName', 'MainVersionID'], recipe);
+
+        if (!filteredRecipe.RecipeName) throw new Error('RecipeName is required')
+        if (!filteredRecipe.MainVersionID) throw new Error('MainVersion is required')
+
+        const result = await DatabaseService.db.run(`INSERT INTO Recipes (RecipeName, MainVersionID) VALUES (?, ?)`, filteredRecipe.RecipeName, filteredRecipe.MainVersionID);
+        if (!result.lastID) throw new Error('Error inserting recipe');
+        return result.lastID;
+    }
+
+    public static async insertRecipeVersion(recipeVersion: Partial<RecipeVersionRaw>): Promise<number> {
+        const filteredRecipeVersion: Partial<RecipeVersionRaw> = this.filterAllowedColumns(['ParentVersionID', 'VersionComment', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'], recipeVersion);
+
+        if (!filteredRecipeVersion.PortionQuantity) throw new Error('PortionQuantity is required')
+        if (!filteredRecipeVersion.PortionDescriptor) throw new Error('PortionDescriptor is required')
+        if (!filteredRecipeVersion.ActiveTimeMinutes) throw new Error('ActiveTimeMinutes is required')
+        if (!filteredRecipeVersion.PassiveTimeMinutes) throw new Error('PassiveTimeMinutes is required')
+        if (!filteredRecipeVersion.ComplexityRating) throw new Error('ComplexityRating is required')
+        if (!filteredRecipeVersion.MayhemRating) throw new Error('MayhemRating is required')
+
+        const result = await DatabaseService.db.run(`INSERT INTO RecipeVersions (ParentVersionID, VersionComment, PortionQuantity, PortionDescriptor, ActiveTimeMinutes, PassiveTimeMinutes, ComplexityRating, MayhemRating) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, filteredRecipeVersion.ParentVersionID, filteredRecipeVersion.VersionComment, filteredRecipeVersion.PortionQuantity, filteredRecipeVersion.PortionDescriptor, filteredRecipeVersion.ActiveTimeMinutes, filteredRecipeVersion.PassiveTimeMinutes, filteredRecipeVersion.ComplexityRating, filteredRecipeVersion.MayhemRating);
+        if (!result.lastID) throw new Error('Error inserting recipe version');
+        return result.lastID;
+    }
+
+    public static async insertIngredient(ingredient: Partial<IngredientRaw>): Promise<number> {
+        const filteredIngredient: Partial<IngredientRaw> = this.filterAllowedColumns(['IngredientName', 'IsRecipe', 'RecipeID'], ingredient);
+
+        if (!filteredIngredient.IngredientName) throw new Error('IngredientName is required');
+        if (filteredIngredient.IsRecipe && !filteredIngredient.RecipeID) throw new Error('RecipeID is required when IsRecipe is true');
+
+        const result = await DatabaseService.db.run(`INSERT INTO Ingredients (IngredientName, IsRecipe, RecipeID) VALUES (?, ?, ?)`, filteredIngredient.IngredientName, filteredIngredient.IsRecipe, filteredIngredient.RecipeID);
+        if (!result.lastID) throw new Error('Error inserting ingredient');
+        return result.lastID;
+    }
+
+    public static async insertRecipeVersionIngredient(recipeVersionIngredient: Partial<RecipeVersionIngredientRaw>): Promise<number> {
+        const filteredRecipeVersionIngredient: Partial<RecipeVersionIngredientRaw> = this.filterAllowedColumns(['IngredientID', 'RecipeVersionID', 'Quantity', 'Measurement'], recipeVersionIngredient);
+
+        if (!filteredRecipeVersionIngredient.IngredientID) throw new Error('IngredientID is required');
+        if (!filteredRecipeVersionIngredient.RecipeVersionID) throw new Error('RecipeVersionID is required');
+        if (!filteredRecipeVersionIngredient.Quantity) throw new Error('Quantity is required');
+
+        const result = await DatabaseService.db.run(`INSERT INTO RecipeVersionIngredients (IngredientID, RecipeVersionID, Quantity, Measurement) VALUES (?, ?, ?, ?)`, filteredRecipeVersionIngredient.IngredientID, filteredRecipeVersionIngredient.RecipeVersionID, filteredRecipeVersionIngredient.Quantity, filteredRecipeVersionIngredient.Measurement);
+        if (!result.lastID) throw new Error('Error inserting recipe version ingredient');
+        return result.lastID;
+    }
+
+    public static async insertItem(item: Partial<RequiredItemRaw>): Promise<number> {
+        const filteredItem: Partial<RequiredItemRaw> = this.filterAllowedColumns(['ItemName'], item);
+
+        if (!filteredItem.ItemName) throw new Error('ItemName is required');
+
+        const result = await DatabaseService.db.run(`INSERT INTO Items (ItemName) VALUES (?)`, filteredItem.ItemName);
+        if (!result.lastID) throw new Error('Error inserting item');
+        return result.lastID;
+    }
+
+    public static async insertRecipeVersionItem(recipeVersionItem: Partial<RecipeVersionItemRaw>): Promise<number> {
+        const filteredRecipeVersionItem: Partial<RecipeVersionItemRaw> = this.filterAllowedColumns(['ItemID', 'RecipeVersionID', 'Quantity'], recipeVersionItem);
+
+        if (!filteredRecipeVersionItem.ItemID) throw new Error('ItemID is required');
+        if (!filteredRecipeVersionItem.RecipeVersionID) throw new Error('RecipeVersionID is required');
+        if (!filteredRecipeVersionItem.Quantity) throw new Error('Quantity is required');
+
+        const result = await DatabaseService.db.run(`INSERT INTO RecipeVersionItems (ItemID, RecipeVersionID, Quantity) VALUES (?, ?, ?)`, filteredRecipeVersionItem.ItemID, filteredRecipeVersionItem.RecipeVersionID, filteredRecipeVersionItem.Quantity);
+        if (!result.lastID) throw new Error('Error inserting recipe version item');
+        return result.lastID;
+    }
+
+    public static async insertInstruction(instruction: Partial<InstructionRaw>): Promise<number> {
+        const filteredInstruction: Partial<InstructionRaw> = this.filterAllowedColumns(['RecipeVersionID', 'StepNumber', 'StepDetail'], instruction);
+
+        if (!filteredInstruction.RecipeVersionID) throw new Error('RecipeVersionID is required');
+        if (!filteredInstruction.StepNumber) throw new Error('StepNumber is required');
+        if (!filteredInstruction.StepDetail) throw new Error('StepDetail is required');
+
+        const result = await DatabaseService.db.run(`INSERT INTO Instructions (RecipeVersionID, StepNumber, StepDetail) VALUES (?, ?, ?)`, filteredInstruction.RecipeVersionID, filteredInstruction.StepNumber, filteredInstruction.StepDetail);
+        if (!result.lastID) throw new Error('Error inserting instruction');
+        return result.lastID;
     }
 
 
@@ -117,6 +265,18 @@ export class DatabaseService {
         } catch (error) {
             throw new Error('Error getting recipe item: ' + error);
         }
+    }
+
+    // Utility methods
+    private static filterAllowedColumns<T extends object>(allowedColumns: string[], input: T): Partial<T> {
+        const validKeys = Object.keys(input).filter(key => allowedColumns.includes(key));
+        const output: Partial<T> = {};
+
+        for (const key of validKeys) {
+            output[key as keyof T] = input[key as keyof T];
+        }
+
+        return output;
     }
 }
 
