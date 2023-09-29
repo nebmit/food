@@ -1,6 +1,6 @@
 import { ItemNotFoundException } from "../types";
 import { DatabaseService } from "./databaseService";
-import type { IngredientRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RequiredItemRaw } from "./databaseTypes";
+import type { IngredientRaw, RequiredItemRaw } from "./databaseTypes";
 
 async function processAndInsertRecipeVersionFromString(input: string): Promise<number> {
     const metaSection = input.split('INGREDIENTS')[0].trim();

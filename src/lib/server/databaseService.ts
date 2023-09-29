@@ -154,8 +154,8 @@ export class DatabaseService {
     public static async insertRecipe(recipe: Partial<RecipeRaw>): Promise<number> {
         const filteredRecipe: Partial<RecipeRaw> = this.filterAllowedColumns(['RecipeName', 'MainVersionID'], recipe);
 
-        if (!filteredRecipe.RecipeName) throw new Error('RecipeName is required')
-        if (!filteredRecipe.MainVersionID) throw new Error('MainVersion is required')
+        if (!filteredRecipe.RecipeName) throw new Error('RecipeName is required');
+        if (!filteredRecipe.MainVersionID) throw new Error('MainVersion is required');
 
         const result = await DatabaseService.db.run(`INSERT INTO Recipes (RecipeName, MainVersionID) VALUES (?, ?)`, filteredRecipe.RecipeName, filteredRecipe.MainVersionID);
         if (!result.lastID) throw new Error('Error inserting recipe');
@@ -165,12 +165,12 @@ export class DatabaseService {
     public static async insertRecipeVersion(recipeVersion: Partial<RecipeVersionRaw>): Promise<number> {
         const filteredRecipeVersion: Partial<RecipeVersionRaw> = this.filterAllowedColumns(['ParentVersionID', 'VersionComment', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'], recipeVersion);
 
-        if (!filteredRecipeVersion.PortionQuantity) throw new Error('PortionQuantity is required')
-        if (!filteredRecipeVersion.PortionDescriptor) throw new Error('PortionDescriptor is required')
-        if (!filteredRecipeVersion.ActiveTimeMinutes) throw new Error('ActiveTimeMinutes is required')
-        if (!filteredRecipeVersion.PassiveTimeMinutes) throw new Error('PassiveTimeMinutes is required')
-        if (!filteredRecipeVersion.ComplexityRating) throw new Error('ComplexityRating is required')
-        if (!filteredRecipeVersion.MayhemRating) throw new Error('MayhemRating is required')
+        if (!filteredRecipeVersion.PortionQuantity) throw new Error('PortionQuantity is required');
+        if (!filteredRecipeVersion.PortionDescriptor) throw new Error('PortionDescriptor is required');
+        if (!filteredRecipeVersion.ActiveTimeMinutes) throw new Error('ActiveTimeMinutes is required');
+        if (!filteredRecipeVersion.PassiveTimeMinutes) throw new Error('PassiveTimeMinutes is required');
+        if (!filteredRecipeVersion.ComplexityRating) throw new Error('ComplexityRating is required');
+        if (!filteredRecipeVersion.MayhemRating) throw new Error('MayhemRating is required');
 
         const result = await DatabaseService.db.run(`INSERT INTO RecipeVersions (ParentVersionID, VersionComment, PortionQuantity, PortionDescriptor, ActiveTimeMinutes, PassiveTimeMinutes, ComplexityRating, MayhemRating) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, filteredRecipeVersion.ParentVersionID, filteredRecipeVersion.VersionComment, filteredRecipeVersion.PortionQuantity, filteredRecipeVersion.PortionDescriptor, filteredRecipeVersion.ActiveTimeMinutes, filteredRecipeVersion.PassiveTimeMinutes, filteredRecipeVersion.ComplexityRating, filteredRecipeVersion.MayhemRating);
         if (!result.lastID) throw new Error('Error inserting recipe version');
@@ -246,7 +246,7 @@ export class DatabaseService {
                 Ingredient: ingredient,
                 Quantity: recipeIngredient.Quantity,
                 Measurement: recipeIngredient.Measurement,
-            }
+            };
         } catch (error) {
             throw new Error('Error getting recipe ingredient: ' + error);
         }
@@ -261,7 +261,7 @@ export class DatabaseService {
                 RecipeVersionID: recipeItem.RecipeVersionID,
                 Item: item,
                 Quantity: recipeItem.Quantity,
-            }
+            };
         } catch (error) {
             throw new Error('Error getting recipe item: ' + error);
         }

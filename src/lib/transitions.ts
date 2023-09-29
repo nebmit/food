@@ -1,19 +1,20 @@
 import { cubicOut } from "svelte/easing";
+import type { Transition } from "svelte/types/compiler/interfaces";
 
 function random(min: number, max: number): number {
     return Math.random() * (max - min) + min;
 }
 
 export function variableTransition(
-    node: any,
-    options: { fn: Function;[key: string]: any } | undefined
+    node: HTMLElement | SVGElement,
+    options: Partial<Transition> | undefined
 ) {
     if (options === undefined) return;
     return options.fn(node, options);
 }
 
 export function glitch(
-    node: any,
+    node: HTMLElement | SVGElement,
     {
         duration = 1000,
         delay = 0,
@@ -60,7 +61,7 @@ export function glitch(
                     -glitchStrength * displacement,
                     glitchStrength * displacement
                 );
-                let color = ["#ff00a2", "#00d5ff", "#ff00a2", "#00d5ff"][
+                const color = ["#ff00a2", "#00d5ff", "#ff00a2", "#00d5ff"][
                     Math.floor(Math.random() * 4)
                 ];
                 node.style.filter = `drop-shadow(0 0 0.25rem ${color})`;

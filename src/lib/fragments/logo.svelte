@@ -3,6 +3,7 @@
     import { onMount } from "svelte";
     import { cubicIn } from "svelte/easing";
     import { draw, fade } from "svelte/transition";
+    import type { Transition } from "svelte/types/compiler/interfaces";
 
     export let width = "400";
     export let stroke = "#fff";
@@ -10,7 +11,7 @@
 
     export let inDuration = 1500;
 
-    export let outTransition: { [key: string]: any; fn: Function } = {
+    export let outTransition: Partial<Transition> = {
         fn: fade,
     };
 
@@ -35,8 +36,8 @@
         y1: number;
         x2: number;
         y2: number;
-        in?: { fn: Function; [key: string]: any };
-        out?: { fn: Function; [key: string]: any };
+        in?: Partial<Transition>;
+        out?: Partial<Transition>;
         color?: string;
     }> = [
         // Left Top
@@ -118,8 +119,8 @@
     const ellipses: Array<{
         cx: number;
         cy: number;
-        in?: { fn: Function; [key: string]: any };
-        out?: { fn: Function; [key: string]: any };
+        in?: Partial<Transition>;
+        out?: Partial<Transition>;
         color?: string;
     }> = [
         {

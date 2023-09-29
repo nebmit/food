@@ -17,7 +17,7 @@ export async function load({ params }) {
 }
 
 export const actions = {
-    modifyRecipe: async ({ cookies, request }) => {
+    modifyRecipe: async ({ request }) => {
         const data = await request.formData();
 
         const stringRecipeId = data.get("recipeID") as string;

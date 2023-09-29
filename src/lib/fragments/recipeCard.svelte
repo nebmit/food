@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
+    import { stars } from "$lib/actions";
     import type { Recipe } from "$lib/types";
 
     export let recipe: Recipe;
@@ -47,15 +48,11 @@
         <div class="flex flex-row space-x-2">
             <div class="text-cyan-500">
                 Complexity
-                {#each Array(5).fill(null) as _, i}
-                    <span>{i < complexity ? "★" : "☆"}</span>
-                {/each}
+                <span use:stars={{ total: 5, filled: complexity }} />
             </div>
             <div class="text-purple-500">
                 Mayhem
-                {#each Array(5).fill(null) as _, i}
-                    <span>{i < mayhem ? "★" : "☆"}</span>
-                {/each}
+                <span use:stars={{ total: 5, filled: mayhem }} />
             </div>
         </div>
     </div>

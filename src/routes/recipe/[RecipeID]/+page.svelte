@@ -1,5 +1,6 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
+    import { stars } from "$lib/actions";
     import Navbar from "$lib/fragments/navbar.svelte";
     import { parseInstructionScaled } from "$lib/parser";
     import type {
@@ -69,12 +70,9 @@
                 console.error("There was a problem with the server:", result);
                 return "Something went wrong. Please try again.";
             }
-        } catch (error: any) {
-            console.error(
-                "There was a problem with the fetch operation:",
-                error.message
-            );
-            return error.message;
+        } catch (e: unknown) {
+            console.error("There was a problem with the fetch operation:", e);
+            return e instanceof Error ? e.message : "Something went wrong.";
         }
     }
 </script>
@@ -131,26 +129,24 @@
                 {#if recipeVersion.ComplexityRating}
                     <div class="text-cyan-500">
                         Complexity
-                        {#each Array(5).fill(null) as _, i}
-                            <span
-                                >{i < recipeVersion.ComplexityRating
-                                    ? "★"
-                                    : "☆"}</span
-                            >
-                        {/each}
+                        <span
+                            use:stars={{
+                                total: 5,
+                                filled: recipeVersion.ComplexityRating,
+                            }}
+                        />
                     </div>
                     <span>|</span>
                 {/if}
                 {#if recipeVersion.MayhemRating}
                     <div class="text-purple-500">
                         Mayhem
-                        {#each Array(5).fill(null) as _, i}
-                            <span
-                                >{i < recipeVersion.MayhemRating
-                                    ? "★"
-                                    : "☆"}</span
-                            >
-                        {/each}
+                        <span
+                            use:stars={{
+                                total: 5,
+                                filled: recipeVersion.MayhemRating,
+                            }}
+                        />
                     </div>
                 {/if}
             </div>

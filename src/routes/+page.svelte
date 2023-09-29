@@ -17,28 +17,28 @@
     onMount(() => {
         sessionStorage.getItem("alreadyPlayedLogo") === "true"
             ? (() => {
-                  contentInDuration = 0;
-                  document.body.style.backgroundColor = "var(--bg-color)";
-                  document.body.style.color = "var(--text-color)";
-                  logo = false;
-                  content = true;
-              })()
+                contentInDuration = 0;
+                document.body.style.backgroundColor = "var(--bg-color)";
+                document.body.style.color = "var(--text-color)";
+                logo = false;
+                content = true;
+            })()
             : (() => {
-                  sessionStorage.setItem("alreadyPlayedLogo", "true");
-                  content = false;
-                  logo = true;
-                  setTimeout(() => {
-                      logo = false;
-                      setTimeout(() => {
-                          document.body.style.backgroundColor =
+                sessionStorage.setItem("alreadyPlayedLogo", "true");
+                content = false;
+                logo = true;
+                setTimeout(() => {
+                    logo = false;
+                    setTimeout(() => {
+                        document.body.style.backgroundColor =
                               "var(--bg-color)";
-                          document.body.style.color = "var(--text-color)";
-                      }, 300);
-                      setTimeout(() => {
-                          content = true;
-                      }, 600);
-                  }, 1250);
-              })();
+                        document.body.style.color = "var(--text-color)";
+                    }, 300);
+                    setTimeout(() => {
+                        content = true;
+                    }, 600);
+                }, 1250);
+            })();
     });
 
     let searchQuery = "";
