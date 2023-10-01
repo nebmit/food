@@ -19,7 +19,7 @@
 
 <Navbar />
 
-<div class="container mx-auto mt-20 px-4 sm:px-0">
+<div class="container mx-auto md:mt-20 px-4 sm:px-0">
     <div class="flex flex-col items-center">
         <div class="w-5/6 items-center">
             {#if !showTextualEditor}
@@ -40,7 +40,7 @@
             {#if $isNameValid && !showTextualEditor}
                 <div
                     class="flex space-x-4"
-                    transition:fly={{ y: 20, duration: 300, opacity: 0.6 }}
+                    in:fly={{ y: 20, duration: 300, opacity: 0.6 }}
                 >
                     <button
                         class="btn-editor-selection flex-grow"
@@ -58,7 +58,15 @@
             {/if}
 
             {#if showTextualEditor}
-                <TextualEditor {recipeName} />
+                <TextualEditor
+                    {recipeName}
+                    onDiscard={() => {
+                        showTextualEditor = false;
+                    }}
+                    onSave={(recipeVersionText) => {
+                        console.log(recipeVersionText);
+                    }}
+                />
             {/if}
         </div>
     </div>

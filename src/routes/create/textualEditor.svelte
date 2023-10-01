@@ -1,4 +1,6 @@
 <script lang="ts">
+    export let onDiscard: () => void;
+    export let onSave: (recipeVersionText: string) => void;
     export let recipeName: string;
 
     const template = `[PortionQuantity] ;; [PortionDescriptor] ;; [ActiveTimeMinutes] ;; [PassiveTimeMinutes] ;; [ComplexityRating] ;; [MayhemRating]
@@ -14,21 +16,17 @@ INSTRUCTIONS
 
     const llmRecipePrompt = `Request: Generate a structured recipe for "${recipeName}" using the provided template. Ensure the content is direct and omits any optional or alternative items. Adherence to the format is essential for computer parsing.\n${template}`;
 
+    let recipeVersionText = "";
+
     function copyToClipboard(text: string) {
         navigator.clipboard.writeText(text);
     }
 </script>
 
-<!-- Recipe Name Card -->
-<div class="github-card mb-6">
-    <h2 class="text-xl font-medium">{recipeName}</h2>
-</div>
+<h2 class="text-xl mb-6 pl-4 font-medium">{recipeName}</h2>
 
-<!-- Explanation & LLM Prompts Card -->
-<div class="github-card mb-6 flex flex-wrap md:flex-nowrap">
-    <!-- Explanation -->
-    <div class="flex-1 pr-4 md:border-r md:w-3/4">
-        <h3 class="font-semibold mb-4">Editor Explanation</h3>
+<div class="card mb-6 flex flex-col md:flex-row">
+    <div class="flex-1 pr-4 pb-4 md:pb-0 md:border-r md:w-3/4">
         <p>
             The textual editor is purpose-built for adding new recipe versions
             through a structured text format. The provided template outlines the
@@ -39,12 +37,11 @@ INSTRUCTIONS
         </p>
     </div>
 
-    <!-- LLM Prompts -->
-    <div class="flex-1 pl-4 mt-4 md:mt-0 md:w-1/4">
+    <div class="flex-1 pl-4 pt-4 md:pt-0 md:w-1/4">
         <div class="mb-2">
             <span class="block font-medium">Recipe Generation Prompt</span>
             <div class="flex justify-between items-center">
-                <span class="truncate flex-1 mr-4">{llmRecipePrompt}}</span>
+                <span class="truncate w-5/6">{llmRecipePrompt}</span>
                 <button
                     class="copy-btn"
                     on:click={() => copyToClipboard(llmRecipePrompt)}
@@ -56,7 +53,7 @@ INSTRUCTIONS
         <div>
             <span class="block font-medium">Template Structure Prompt</span>
             <div class="flex justify-between items-center">
-                <span class="truncate flex-1 mr-4">{template}}</span>
+                <span class="truncate w-5/6">{template}</span>
                 <button
                     class="copy-btn"
                     on:click={() => copyToClipboard(template)}>Copy</button
@@ -66,34 +63,34 @@ INSTRUCTIONS
     </div>
 </div>
 
-<!-- Text Field Card -->
-<div class="github-card">
-    <textarea
-        class="w-full h-64 p-2 rounded border"
-        placeholder={template}
-        rows="8"
-    />
-</div>
+<textarea
+    class="w-full h-64 p-2 mb-4 card"
+    placeholder={template}
+    bind:value={recipeVersionText}
+    rows="8"
+/>
 
-<!-- Save & Discard Buttons -->
-<div class="github-card flex justify-end space-x-4">
+<div class="flex justify-end space-x-4 mb-10">
     <button
         class="py-2 px-6 bg-white border border-gray-300 hover:border-sky-500 focus:outline-none rounded transition duration-200"
+        on:click={() => onSave(recipeVersionText)}
     >
         Save
     </button>
     <button
         class="py-2 px-6 bg-white border border-gray-300 hover:border-red-500 focus:outline-none rounded transition duration-200"
+        on:click={() => {
+            recipeVersionText = "";
+            onDiscard();
+        }}
     >
         Discard
     </button>
 </div>
 
 <style>
-    /* GitHub-like card style */
-    .github-card {
-        border: 1px solid
-            var(--borderColor-default, var(--color-border-default));
+    .card {
+        border: 1px solid #eaeaea;
         padding: 16px;
         border-radius: 6px;
         background-color: #fff;
@@ -101,7 +98,6 @@ INSTRUCTIONS
             Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
-    /* Custom button styles */
     .copy-btn {
         padding: 4px 8px;
         border: 1px solid #ccc;
@@ -112,5 +108,9 @@ INSTRUCTIONS
 
     .copy-btn:hover {
         background-color: #f0f0f0;
+    }
+
+    .copy-btn:active {
+        background-color: #e0e0e0;
     }
 </style>
