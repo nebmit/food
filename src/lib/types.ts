@@ -66,3 +66,11 @@ export class ItemNotFoundException extends Error {
         Object.setPrototypeOf(this, ItemNotFoundException.prototype);
     }
 }
+
+export class ParsingException extends Error {
+    constructor(message?: string) {
+        super(message);
+        this.name = 'ParsingException';
+        Object.setPrototypeOf(this, ParsingException.prototype);
+    }
+}

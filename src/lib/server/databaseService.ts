@@ -182,6 +182,8 @@ export class DatabaseService {
 
         if (!filteredIngredient.IngredientName) throw new Error('IngredientName is required');
         if (filteredIngredient.IsRecipe && !filteredIngredient.RecipeID) throw new Error('RecipeID is required when IsRecipe is true');
+        if (!filteredIngredient.IsRecipe && filteredIngredient.RecipeID) throw new Error('RecipeID is not allowed when IsRecipe is false');
+        if (filteredIngredient.IsRecipe == null) filteredIngredient.IsRecipe = false;
 
         const result = await DatabaseService.db.run(`INSERT INTO Ingredients (IngredientName, IsRecipe, RecipeID) VALUES (?, ?, ?)`, filteredIngredient.IngredientName, filteredIngredient.IsRecipe, filteredIngredient.RecipeID);
         if (!result.lastID) throw new Error('Error inserting ingredient');

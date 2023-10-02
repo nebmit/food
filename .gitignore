@@ -5,6 +5,7 @@
 /.svelte-kit
 /build
 /package
+/static/images/recipes/*
 database.db
 node_modules
 vite.config.js.timestamp-*

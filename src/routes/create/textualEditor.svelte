@@ -1,22 +1,23 @@
 <script lang="ts">
     export let onDiscard: () => void;
-    export let onSave: (recipeVersionText: string) => void;
+    export let onSave: (recipeVersionText: string) => Promise<string | void>;
     export let recipeName: string;
 
-    const template = `[PortionQuantity] ;; [PortionDescriptor] ;; [ActiveTimeMinutes] ;; [PassiveTimeMinutes] ;; [ComplexityRating] ;; [MayhemRating]
+    const template = `[PortionQuantity | integer] ;; [PortionDescriptor | string] ;; [ActiveTimeMinutes | integer] ;; [PassiveTimeMinutes | integer] ;; [ComplexityRating | integer (1-5)] ;; [MayhemRating | integer (1-5)] ;;
 INGREDIENTS
-[IngredientName] :: [Quantity] :: [Measurement] ;;
-[IngredientName] :: [Quantity] :: [Measurement] ;; ...
+[IngredientName | string] :: [Quantity | number] :: [Measurement | string] ;;
+[IngredientName | string] :: [Quantity | number] :: [Measurement | string] ;; ...
 ITEMS
-[ItemName] :: [Quantity] ;;
-[ItemName] :: [Quantity] ;; ...
+[ItemName | string] :: [Quantity | number] ;;
+[ItemName | string] :: [Quantity | number] ;; ...
 INSTRUCTIONS
-[StepNumber] :: [StepDetail] ;;
-[StepNumber] :: [StepDetail] ;; ...`;
+[StepNumber | integer] :: [StepDetail | string] ;;
+[StepNumber | integer] :: [StepDetail | string] ;; ...`;
 
-    const llmRecipePrompt = `Request: Generate a structured recipe for "${recipeName}" using the provided template. Ensure the content is direct and omits any optional or alternative items. Adherence to the format is essential for computer parsing.\n${template}`;
+    const llmRecipePrompt = `Generate a Recipe for "${recipeName}" using metric measurements in the following format, replacing variables in square brackets with the actual value. Please create straightforward and simple instructions, leave out optional or alternative items and ingredients. Strictly follow the format to enable computer parsing.\n\n${template}`;
 
     let recipeVersionText = "";
+    let saveFeedback = "";
 
     function copyToClipboard(text: string) {
         navigator.clipboard.writeText(text);
@@ -71,9 +72,16 @@ INSTRUCTIONS
 />
 
 <div class="flex justify-end space-x-4 mb-10">
+    <div>
+        <span class="text-sm text-red-500">
+            {saveFeedback}
+        </span>
+    </div>
     <button
         class="py-2 px-6 bg-white border border-gray-300 hover:border-sky-500 focus:outline-none rounded transition duration-200"
-        on:click={() => onSave(recipeVersionText)}
+        on:click={async () => {
+            saveFeedback = (await onSave(recipeVersionText)) ?? "";
+        }}
     >
         Save
     </button>

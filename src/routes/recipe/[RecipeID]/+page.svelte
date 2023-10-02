@@ -27,8 +27,6 @@
     $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
 
     async function onSave(image: File, name: string): Promise<string | void> {
-        console.log(image, name);
-
         name = name.trim();
 
         if (image && (image.type !== "image/png" || image.size > 10000000)) {

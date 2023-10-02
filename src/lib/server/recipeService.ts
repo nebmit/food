@@ -1,4 +1,4 @@
-import { ItemNotFoundException } from "../types";
+import { ItemNotFoundException, ParsingException } from "../types";
 import { DatabaseService } from "./databaseService";
 import type { IngredientRaw, RequiredItemRaw } from "./databaseTypes";
 
@@ -9,13 +9,13 @@ async function processAndInsertRecipeVersionFromString(input: string): Promise<n
     const instructionSection = input.split('INSTRUCTIONS')[1].trim();
 
     if (!metaSection || !ingredientSection || !itemSection || !instructionSection) {
-        throw new Error('Invalid recipe format');
+        throw new ParsingException('Invalid recipe format');
     }
 
     const metaValues = metaSection.split(';;').map(s => s.trim());
 
     if (metaValues.length !== 7) {
-        throw new Error('Invalid meta section');
+        throw new ParsingException('Invalid meta section');
     }
 
     // Handle Recipe Version
@@ -91,8 +91,42 @@ async function processAndInsertRecipeVersionFromString(input: string): Promise<n
     return insertedVersionId;
 }
 
-export async function processAndInsertRecipeFromString(input: string, recipeName: string): Promise<number> {
+function validateString(s: string): boolean {
+    const metaSectionRegex = /^\d+ ;; .* ;; \d+ ;; \d+ ;; ([1-5]) ;; ([1-5]) ;;\s*INGREDIENTS\s*/;
+    const ingredientRegex = /.* :: \d+(\.\d+)? :: .* ;;\s*/g;
+    const itemRegex = /ITEMS\s*([^0-9]+ :: \d+(\.\d+)? ;;\s*)+/;
+    const instructionRegex = /INSTRUCTIONS\s*(\d+ :: .* ;;\s*)+/;
+
+    const portionSectionMatch = s.match(metaSectionRegex);
+    if (!portionSectionMatch) {
+        throw new ParsingException('Invalid meta section format');
+    }
+    s = s.replace(portionSectionMatch[0], '');
+
+    if (!s.match(ingredientRegex)) {
+        throw new ParsingException('Invalid ingredient format');
+    }
+    while (s.match(ingredientRegex)) {
+        s = s.replace(ingredientRegex, '');
+    }
+
+    const itemsMatch = s.match(itemRegex);
+    if (!itemsMatch) {
+        throw new ParsingException('Invalid items format');
+    }
+    s = s.replace(itemsMatch[0], '');
+
+    if (!s.match(instructionRegex)) {
+        throw new ParsingException('Invalid instructions format');
+    }
+
+    return true;
+}
+
+export async function processAndInsertRecipeFromString(recipeName: string, input: string): Promise<number> {
+    if (!validateString(input)) {
+        throw new ParsingException('Invalid recipe format');
+    }
     const versionId = await processAndInsertRecipeVersionFromString(input);
     return await DatabaseService.insertRecipe({ RecipeName: recipeName, MainVersionID: versionId });
 }
-

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import Navbar from "$lib/fragments/navbar.svelte";
     import { writable } from "svelte/store";
     import { fly } from "svelte/transition";
@@ -15,6 +16,41 @@
     function toggleTextualEditor() {
         showTextualEditor = !showTextualEditor;
     }
+
+    const onSave = async (
+        recipeVersionText: string
+    ): Promise<string | void> => {
+        if (!recipeVersionText) {
+            return "Please provide a valid recipe text.";
+        }
+
+        const formData = new FormData();
+        formData.append("recipeName", recipeName);
+        formData.append("recipeVersionText", recipeVersionText);
+
+        try {
+            const response = await fetch("?/createRecipe", {
+                method: "POST",
+                body: formData,
+            });
+            if (!response.ok) {
+                return "Something went wrong. Please try again.";
+            }
+
+            const body = await response.json();
+            const data = JSON.parse(body.data);
+
+            const redirect = data[data[0].redirect];
+            if (redirect) {
+                goto(redirect);
+            }
+
+            return data[data[0].error] ?? "";
+        } catch (error) {
+            console.error("Error:", error);
+            return "Something went wrong. Please try again.";
+        }
+    };
 </script>
 
 <Navbar />
@@ -63,9 +99,7 @@
                     onDiscard={() => {
                         showTextualEditor = false;
                     }}
-                    onSave={(recipeVersionText) => {
-                        console.log(recipeVersionText);
-                    }}
+                    {onSave}
                 />
             {/if}
         </div>
