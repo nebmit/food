@@ -14,7 +14,34 @@ INSTRUCTIONS
 [StepNumber | integer] :: [StepDetail | string] ;;
 [StepNumber | integer] :: [StepDetail | string] ;; ...`;
 
-    const llmRecipePrompt = `Generate a Recipe for "${recipeName}" using metric measurements in the following format, replacing variables in square brackets with the actual value. Please create straightforward and simple instructions, leave out optional or alternative items and ingredients. Strictly follow the format to enable computer parsing.\n\n${template}`;
+    const llmRecipePrompt = `Generate a Recipe for "${recipeName}" using metric measurements in the following format, replacing variables in square brackets with the actual value. Please create straightforward and simple instructions, leave out optional or alternative items and ingredients. The instructions use the following notation to embed ingredients {PercentageAmount:IngredientName}. Strictly follow the format to enable computer parsing.\n
+Example for Chocolate Chip Cookies:
+24 ;; cookies ;; 15 ;; 10 ;; 2 ;; 1 ;;
+INGREDIENTS
+Butter :: 225 :: grams ;;
+Granulated sugar :: 200 :: grams ;;
+Brown sugar :: 150 :: grams ;;
+Eggs :: 2 :: whole ;;
+Vanilla extract :: 5 :: milliliters ;;
+All-purpose flour :: 375 :: grams ;;
+Baking soda :: 5 :: grams ;;
+Salt :: 5 :: grams ;;
+Chocolate chips :: 200 :: grams ;;
+ITEMS
+Baking sheet :: 2 ;;
+Mixing bowl :: 2 ;;
+Spoon :: 1 ;;
+Oven :: 1 ;;
+INSTRUCTIONS
+1 :: Preheat the oven to 190°C. ;;
+2 :: In a mixing bowl, mix the {1:butter}, {1:granulated sugar}, and {1:brown sugar} until smooth. ;;
+3 :: Beat in {1:eggs}, then stir in {1:vanilla extract}. ;;
+4 :: In a separate bowl, whisk together the . ;;
+5 :: Gradually add {1:flour}, {1:baking soda}, and {1:salt} to the butter mixture and mix until combined. ;;
+6 :: Fold in {1:chocolate chips}. ;;
+7 :: Using the spoon or cookie scoop, drop rounded tablespoonfuls onto the baking sheets. ;;
+8 :: Bake in the preheated oven for 8-10 minutes or until the edges are lightly browned. ;;
+9 :: Remove from the oven and let the cookies cool for a few minutes before transferring to a wire rack to cool completely. ;;\n\nFormat:\n${template}`;
 
     let recipeVersionText = "";
     let saveFeedback = "";

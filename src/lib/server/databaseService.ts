@@ -133,7 +133,10 @@ export class DatabaseService {
     }
 
 
+    // ************ //
     // Public PATCH methods
+    // ************ //
+
     public static async patchRecipe(recipeId: number, newRecipeData: Partial<Recipe>): Promise<void> {
         const ALLOWED_COLUMNS = ['RecipeName', 'MainVersionID'];
         const validKeys = Object.keys(newRecipeData).filter(key => ALLOWED_COLUMNS.includes(key));
@@ -149,8 +152,71 @@ export class DatabaseService {
         await DatabaseService.db.run(query, ...values, recipeId);
     }
 
+    public static async patchRecipeVersion(versionId: number, newVersionData: Partial<RecipeVersionRaw>): Promise<void> {
+        const ALLOWED_COLUMNS = ['ParentVersionID', 'VersionComment', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'];
+        const validKeys = Object.keys(newVersionData).filter(key => ALLOWED_COLUMNS.includes(key));
 
+        if (!validKeys.length) {
+            throw new Error("No valid columns provided for update.");
+        }
+
+        const setters = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => newVersionData[key as keyof RecipeVersionRaw]);
+
+        const query = `UPDATE RecipeVersions SET ${setters} WHERE RecipeVersionID = ?`;
+        await DatabaseService.db.run(query, ...values, versionId);
+    }
+
+    public static async patchRecipeVersionIngredient(recipeVersionIngredientId: number, newIngredientData: Partial<RecipeVersionIngredientRaw>): Promise<void> {
+        const ALLOWED_COLUMNS = ['IngredientID', 'RecipeVersionID', 'Quantity', 'Measurement'];
+        const validKeys = Object.keys(newIngredientData).filter(key => ALLOWED_COLUMNS.includes(key));
+
+        if (!validKeys.length) {
+            throw new Error("No valid columns provided for update.");
+        }
+
+        const setters = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => newIngredientData[key as keyof RecipeVersionIngredientRaw]);
+
+        const query = `UPDATE RecipeVersionIngredients SET ${setters} WHERE RecipeVersionIngredientID = ?`;
+        await DatabaseService.db.run(query, ...values, recipeVersionIngredientId);
+    }
+
+    public static async patchInstruction(instructionId: number, newInstructionData: Partial<InstructionRaw>): Promise<void> {
+        const ALLOWED_COLUMNS = ['RecipeVersionID', 'StepNumber', 'StepDetail'];
+        const validKeys = Object.keys(newInstructionData).filter(key => ALLOWED_COLUMNS.includes(key));
+
+        if (!validKeys.length) {
+            throw new Error("No valid columns provided for update.");
+        }
+
+        const setters = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => newInstructionData[key as keyof InstructionRaw]);
+
+        const query = `UPDATE Instructions SET ${setters} WHERE InstructionID = ?`;
+        await DatabaseService.db.run(query, ...values, instructionId);
+    }
+
+    public static async patchRecipeVersionItem(recipeVersionItemId: number, newRecipeVersionItemData: Partial<RecipeVersionItemRaw>): Promise<void> {
+        const ALLOWED_COLUMNS = ['ItemID', 'RecipeVersionID', 'Quantity'];
+        const validKeys = Object.keys(newRecipeVersionItemData).filter(key => ALLOWED_COLUMNS.includes(key));
+
+        if (!validKeys.length) {
+            throw new Error("No valid columns provided for update.");
+        }
+
+        const setters = validKeys.map(key => `${key} = ?`).join(', ');
+        const values = validKeys.map(key => newRecipeVersionItemData[key as keyof RecipeVersionItemRaw]);
+
+        const query = `UPDATE RecipeVersionItems SET ${setters} WHERE RecipeVersionItemID = ?`;
+        await DatabaseService.db.run(query, ...values, recipeVersionItemId);
+    }
+
+
+    // ************ //
     // Public INSERT methods
+    // ************ //
+
     public static async insertRecipe(recipe: Partial<RecipeRaw>): Promise<number> {
         const filteredRecipe: Partial<RecipeRaw> = this.filterAllowedColumns(['RecipeName', 'MainVersionID'], recipe);
 
@@ -235,6 +301,24 @@ export class DatabaseService {
         if (!result.lastID) throw new Error('Error inserting instruction');
         return result.lastID;
     }
+
+
+    // ************ //
+    // Public DELETE methods
+    // ************ //
+
+    public static async deleteRecipeVersionIngredient(recipeVersionIngredientID: number): Promise<void> {
+        await DatabaseService.db.run(`DELETE FROM RecipeVersionIngredients WHERE RecipeVersionIngredientID = ?`, recipeVersionIngredientID);
+    }
+
+    public static async deleteRecipeVersionItem(recipeVersionItemID: number): Promise<void> {
+        await DatabaseService.db.run(`DELETE FROM RecipeVersionItems WHERE RecipeVersionItemID = ?`, recipeVersionItemID);
+    }
+
+    public static async deleteInstruction(instructionID: number): Promise<void> {
+        await DatabaseService.db.run(`DELETE FROM Instructions WHERE InstructionID = ?`, instructionID);
+    }
+
 
 
     // Private methods
