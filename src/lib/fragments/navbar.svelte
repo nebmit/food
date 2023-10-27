@@ -1,4 +1,8 @@
 <script lang="ts">
+    import { getContext, onMount } from "svelte";
+    import type { Writable } from "svelte/store";
+    import type { User } from "../../app";
+
     let show = false;
     function toggleMenu() {
         show = !show;
@@ -18,6 +22,22 @@
             link: "/about",
         },
     ];
+
+    const userStore = getContext<Writable<User>>("user");
+
+    let user: User;
+    userStore.subscribe((value: User) => {
+        user = value;
+    });
+
+    let ssoURL = import.meta.env.VITE_SSO_URL;
+
+    let loginURL = `${ssoURL}/login`;
+    let logoutURL = `${ssoURL}/logout`;
+    onMount(() => {
+        loginURL = `${ssoURL}/login?redirect_uri=${window.location}`;
+        logoutURL = `${ssoURL}/logout?redirect_uri=${window.origin}`;
+    });
 </script>
 
 <div style="z-index: 1;">
@@ -63,13 +83,37 @@
 
         <!-- Right Element -->
         <div class="flex-shrink-0 w-1/4 pr-4 text-right">
-            <a href="/404" class="hover:text-gray-700"> Login </a>
+            {#if user.isAuthenticated}
+                <a
+                    href={logoutURL}
+                    class="hover:text-gray-700"
+                    aria-label="Logout"
+                >
+                    Logout
+                </a>
+            {:else}
+                <a
+                    href={loginURL}
+                    class="hover:text-gray-700"
+                    aria-label="Login"
+                >
+                    Login
+                </a>
+            {/if}
         </div>
     </div>
 
     <!-- Mobile Navbar -->
     <div class="sm:hidden flex justify-end items-center h-16">
-        <a href="/404" class="hover:text-gray-700"> Login </a>
+        {#if user.isAuthenticated}
+            <a href={logoutURL} class="hover:text-gray-700" aria-label="Logout">
+                Logout
+            </a>
+        {:else}
+            <a href={loginURL} class="hover:text-gray-700" aria-label="Login">
+                Login
+            </a>
+        {/if}
         <button class="mx-2" on:click={toggleMenu}>
             <svg
                 class="w-6 h-6"
