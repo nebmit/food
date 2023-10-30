@@ -5,7 +5,7 @@ const CART_KEY = 'CART';
 type Pair = {
     recipe: Recipe
     quantity: number
-}
+};
 
 function getCart(): Pair[] {
     const cart = localStorage.getItem(CART_KEY);
