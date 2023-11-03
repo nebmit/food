@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS RecipeVersionIngredients (
     RecipeVersionID INTEGER NOT NULL,
     IngredientID INTEGER NOT NULL,
     Quantity REAL NOT NULL,
-    Measurement TEXT,
+    Measurement TEXT NOT NULL DEFAULT 'whole',
     FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID),
     FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
 );

@@ -19,7 +19,7 @@
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
 
-    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".png";
+    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
 
     let showEditModal = false;
 

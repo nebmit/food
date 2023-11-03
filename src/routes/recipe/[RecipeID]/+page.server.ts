@@ -1,8 +1,8 @@
 import { DatabaseService } from "$lib/server/databaseService";
 import type { Recipe } from "$lib/types";
 import { error, fail } from '@sveltejs/kit';
-import fs from 'fs/promises';
 import path from 'path';
+import sharp from 'sharp';
 
 export async function load({ params }) {
     try {
@@ -55,9 +55,12 @@ export const actions = {
         }
 
         if (image) {
-            const imagePath = path.join('static', 'images', 'recipes', `${recipeId}.png`);
-            const buffer = await image.arrayBuffer();
-            await fs.writeFile(imagePath, Buffer.from(buffer));
+            const imagePath = path.join('static', 'images', 'recipes', `${recipeId}.webp`);
+            const sharpInstance = sharp(Buffer.from(await image.arrayBuffer()));
+            sharpInstance
+                .resize(800)
+                .webp({ quality: 80 })
+                .toFile(imagePath);
         }
 
         if (name) {
