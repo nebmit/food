@@ -1,14 +1,17 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
     import { stars } from "$lib/actions";
+    import { setToCart } from "$lib/cart";
     import Navbar from "$lib/fragments/navbar.svelte";
     import { parseInstructionScaled } from "$lib/parser";
+    import { pageTitle } from "$lib/stores";
     import type {
         Instruction,
         Recipe,
         RecipeIngredient,
         RecipeItem,
     } from "$lib/types";
+    import { onDestroy } from "svelte";
     import Modal from "./modal.svelte";
 
     export let data: { recipe: Recipe };
@@ -20,6 +23,9 @@
     const items: RecipeItem[] = recipeVersion.Items;
 
     const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
+
+    pageTitle.set(recipe.RecipeName);
+    onDestroy(() => pageTitle.set(null));
 
     let showEditModal = false;
 
@@ -94,7 +100,14 @@
             class="absolute top-0 left-0 w-full h-full rounded-t-lg object-cover object-center blur-sm"
             src={imageUrl}
             alt={recipe.RecipeName}
-        />
+        /><button
+            class="absolute top-2 right-2 bg-slate-400 bg-opacity-40 hover:bg-opacity-60 text-white font-bold py-2 px-4 rounded"
+            on:click={() => {
+                setToCart(recipe, selectedPortion);
+            }}
+        >
+            Add to Shopping List
+        </button>
         <div
             class="relative text-center top-1/3 p-2 px-4 text-white text-3xl font-bold text-shadow"
         >

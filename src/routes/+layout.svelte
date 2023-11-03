@@ -1,7 +1,8 @@
 <script lang="ts">
-    import "../app.css";
+    import { pageTitle } from "$lib/stores";
     import { setContext } from "svelte";
     import { writable } from "svelte/store";
+    import "../app.css";
     import type { LayoutData } from "./$types";
 
     export let data: LayoutData;
@@ -11,5 +12,9 @@
 
     setContext("user", user);
 </script>
+
+<svelte:head>
+    <title>{$pageTitle || "Food | TBW"}</title>
+</svelte:head>
 
 <slot />

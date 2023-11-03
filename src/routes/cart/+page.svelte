@@ -1,5 +1,6 @@
 <script lang="ts">
     import { getCart, getCartIngredients, setToCart } from "$lib/cart";
+    import Navbar from "$lib/fragments/navbar.svelte";
     import type { Ingredient, Recipe } from "$lib/types";
     import { onMount } from "svelte";
     import { QRCodeImage } from "svelte-qrcode-image";
@@ -20,13 +21,25 @@
     function loadCart() {
         cartItems = getCart();
         cartIngredients = getCartIngredients();
+
+        if (cartItems.length === 0) {
+            list_url = null;
+            return;
+        }
     }
 
     function handleRemove(recipe: Recipe) {
         setToCart(recipe, -1);
         loadCart();
     }
+
+    function updateRecipe(recipe: Recipe, quantity: number) {
+        setToCart(recipe, quantity);
+        loadCart();
+    }
 </script>
+
+<Navbar />
 
 {#if list_url}
     <QRCodeImage
@@ -49,7 +62,7 @@
             <input
                 type="number"
                 bind:value={item.quantity}
-                on:change={() => setToCart(item.recipe, item.quantity)}
+                on:change={() => updateRecipe(item.recipe, item.quantity)}
             />
             {item.recipe.RecipeName}
             <button on:click={() => handleRemove(item.recipe)}>Remove</button>

@@ -18,8 +18,8 @@
             link: "/explore",
         },
         {
-            name: "About",
-            link: "/about",
+            name: "List",
+            link: "/cart",
         },
     ];
 

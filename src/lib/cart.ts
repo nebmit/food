@@ -44,7 +44,7 @@ function getCartIngredients() {
     const ingredientMap: { [key: number]: { ingredient: Ingredient, quantity: number, measurement: string | undefined } } = {};
 
     cart.forEach(recipePair => {
-        const multiplier = recipePair.quantity;
+        const multiplier = recipePair.quantity / recipePair.recipe.MainVersion.PortionQuantity;
         recipePair.recipe.MainVersion.Ingredients.forEach(recipeIngredient => {
             if (recipeIngredient.Ingredient.IsRecipe) return;
 
