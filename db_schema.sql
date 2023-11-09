@@ -81,6 +81,14 @@ CREATE TABLE IF NOT EXISTS IngredientTagAssignment (
     FOREIGN KEY (TagID) REFERENCES IngredientTags(TagID)
 );
 
+-- Cart Table
+CREATE TABLE IF NOT EXISTS Cart (
+    CartID INTEGER PRIMARY KEY,
+    UUID TEXT NOT NULL,
+    Contents TEXT NOT NULL,
+    CreatedDate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Recipes Table
 INSERT INTO Recipes (RecipeID, RecipeName, MainVersionID)
 VALUES (1, 'Chicken Fried Rice', 1),

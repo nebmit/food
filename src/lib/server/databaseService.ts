@@ -4,6 +4,7 @@ import sqlite3 from 'sqlite3';
 import type { Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
 import { ItemNotFoundException } from '../types';
 import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RecipeVersionRaw, RequiredItemRaw } from './databaseTypes';
+import { v4 as uuidv4 } from 'uuid';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -302,6 +303,13 @@ export class DatabaseService {
         return result.lastID;
     }
 
+    public static async insertCart(contents: Array<{ ingredient: Ingredient; quantity: number; measurement: string; }>): Promise<string> {
+        const uuid = uuidv4();
+        const result = await DatabaseService.db.run(`INSERT INTO Cart (UUID, Contents) VALUES (?, ?)`, uuid, JSON.stringify(contents));
+        if (!result.lastID) throw new Error('Error inserting cart');
+        DatabaseService.db.run(`DELETE FROM Cart WHERE CreatedDate < datetime('now', '-7 day')`);
+        return uuid;
+    }
 
     // ************ //
     // Public DELETE methods

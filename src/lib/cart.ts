@@ -41,7 +41,7 @@ function removeFromCart(recipe: Recipe) {
 function getCartIngredients() {
     const cart = getCart();
 
-    const ingredientMap: { [key: number]: { ingredient: Ingredient, quantity: number, measurement: string | undefined } } = {};
+    const ingredientMap: { [key: number]: { ingredient: Ingredient, quantity: number, measurement: string } } = {};
 
     cart.forEach(recipePair => {
         const multiplier = recipePair.quantity / recipePair.recipe.MainVersion.PortionQuantity;

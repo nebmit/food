@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { deserialize } from "$app/forms";
     import { getCart, getCartIngredients, setToCart } from "$lib/cart";
     import Navbar from "$lib/fragments/navbar.svelte";
     import type { Ingredient, Recipe } from "$lib/types";
@@ -11,20 +12,50 @@
     let cartIngredients: {
         ingredient: Ingredient;
         quantity: number;
-        measurement: string | undefined;
+        measurement: string;
     }[] = [];
 
     onMount(async () => {
         loadCart();
     });
 
-    function loadCart() {
+    let timeout: number | null = null;
+    async function loadCart() {
         cartItems = getCart();
         cartIngredients = getCartIngredients();
 
         if (cartItems.length === 0) {
             list_url = null;
             return;
+        }
+
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(createList, 500) as unknown as number;
+    }
+
+    async function createList() {
+        const formData = new FormData();
+        formData.append("ingredients", JSON.stringify(cartIngredients));
+        try {
+            const response = await fetch("?/createCart", {
+                method: "POST",
+                body: formData,
+            });
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            const data = await response.text();
+
+            const result = deserialize(data);
+            if (result.type === "success" && result.data) {
+                list_url = (result.data.url as string) || null;
+            } else {
+                console.error("There was a problem with the server:", result);
+            }
+        } catch (e: unknown) {
+            console.error("There was a problem with the fetch operation:", e);
         }
     }
 
@@ -72,6 +103,7 @@
                     <div class="flex items-center">
                         <input
                             type="number"
+                            min="1"
                             bind:value={item.quantity}
                             on:change={() =>
                                 updateRecipe(item.recipe, item.quantity)}

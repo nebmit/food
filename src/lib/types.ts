@@ -23,7 +23,7 @@ export interface RecipeIngredient {
     RecipeVersionID: number;
     Ingredient: Ingredient;
     Quantity: number;
-    Measurement?: string;
+    Measurement: string;
 }
 
 export interface Item {

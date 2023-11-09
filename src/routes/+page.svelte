@@ -64,7 +64,7 @@
             <div class="flex h-screen justify-center">
                 <Logo
                     width="30%"
-                    stroke="#8C8C8D"
+                    stroke="#FF9A8A"
                     inDuration={1250}
                     outTransition={{
                         fn: glitch,
