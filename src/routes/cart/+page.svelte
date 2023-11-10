@@ -2,18 +2,14 @@
     import { deserialize } from "$app/forms";
     import { getCart, getCartIngredients, setToCart } from "$lib/cart";
     import Navbar from "$lib/fragments/navbar.svelte";
-    import type { Ingredient, Recipe } from "$lib/types";
+    import type { CartIngredient, Recipe } from "$lib/types";
     import { onMount } from "svelte";
     import { QRCodeImage } from "svelte-qrcode-image";
 
     let list_url: string | null = null;
 
     let cartItems: { recipe: Recipe; quantity: number }[] = [];
-    let cartIngredients: {
-        ingredient: Ingredient;
-        quantity: number;
-        measurement: string;
-    }[] = [];
+    let cartIngredients: CartIngredient[] = [];
 
     onMount(async () => {
         loadCart();
@@ -78,14 +74,16 @@
         <!-- QR Code -->
         <div class="px-2 w-full md:w-64 md:mb-0 mb-6">
             {#if list_url}
-                <QRCodeImage
-                    bind:text={list_url}
-                    errorCorrectionLevel="M"
-                    displayType="canvas"
-                    width={250}
-                />
+                <a href={list_url} target="_blank">
+                    <QRCodeImage
+                        bind:text={list_url}
+                        errorCorrectionLevel="M"
+                        displayType="canvas"
+                        width={256}
+                    />
+                </a>
             {:else}
-                <div class="w-60 h-60 p-5">
+                <div class="w-64 h-64 p-5">
                     <img
                         src="/images/placeholder.png"
                         alt="Preparing QR code"

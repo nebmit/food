@@ -1,5 +1,5 @@
 import { DatabaseService } from "$lib/server/databaseService";
-import type { Ingredient } from "$lib/types";
+import type { CartIngredient } from "$lib/types";
 import { fail } from "@sveltejs/kit";
 
 export const actions = {
@@ -7,11 +7,7 @@ export const actions = {
         const data = await request.formData();
 
         const ingredientDataString = data.get("ingredients") as string;
-        const ingredientData: {
-            ingredient: Ingredient;
-            quantity: number;
-            measurement: string;
-        }[] = JSON.parse(ingredientDataString);
+        const ingredientData: CartIngredient[] = JSON.parse(ingredientDataString);
 
         if (!Array.isArray(ingredientData) || !ingredientData.every(item => {
             return typeof item === "object" &&

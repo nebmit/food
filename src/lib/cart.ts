@@ -1,4 +1,4 @@
-import type { Ingredient, Recipe } from "./types";
+import type { CartIngredient, Recipe } from "./types";
 
 const CART_KEY = 'CART';
 
@@ -38,10 +38,10 @@ function removeFromCart(recipe: Recipe) {
     setCart(cart);
 }
 
-function getCartIngredients() {
+function getCartIngredients(): CartIngredient[] {
     const cart = getCart();
 
-    const ingredientMap: { [key: number]: { ingredient: Ingredient, quantity: number, measurement: string } } = {};
+    const ingredientMap: { [key: number]: CartIngredient } = {};
 
     cart.forEach(recipePair => {
         const multiplier = recipePair.quantity / recipePair.recipe.MainVersion.PortionQuantity;

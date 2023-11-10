@@ -59,6 +59,12 @@ export interface Recipe {
     MainVersion: RecipeVersion;
 }
 
+export interface CartIngredient {
+    ingredient: Ingredient,
+    quantity: number,
+    measurement: string
+}
+
 export class ItemNotFoundException extends Error {
     constructor(message?: string) {
         super(message);

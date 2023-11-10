@@ -1,10 +1,10 @@
 import type { Database } from 'sqlite';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
-import type { Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+import type { CartIngredient, Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
 import { ItemNotFoundException } from '../types';
 import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RecipeVersionRaw, RequiredItemRaw } from './databaseTypes';
-import { v4 as uuidv4 } from 'uuid';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -28,7 +28,7 @@ export class DatabaseService {
 
     // GET BY ID methods
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getRecipeById(recipeId: number): Promise<Recipe> {
         const recipe: RecipeRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Recipes WHERE RecipeID = ?`, recipeId);
@@ -42,7 +42,7 @@ export class DatabaseService {
     }
 
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getRecipeVersionById(versionId: number): Promise<RecipeVersion> {
         const version = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, versionId);
@@ -72,7 +72,7 @@ export class DatabaseService {
     }
 
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getIngredientById(ingredientId: number): Promise<Ingredient> {
         const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
@@ -92,7 +92,7 @@ export class DatabaseService {
     }
 
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getItemById(itemId: number): Promise<RequiredItemRaw> {
         const item: RequiredItemRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Items WHERE ItemID = ?`, itemId);
@@ -104,7 +104,7 @@ export class DatabaseService {
 
     // GET BY NAME methods
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getIngredientByName(ingredientName: string): Promise<Ingredient> {
         const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientName = ?`, ingredientName);
@@ -124,13 +124,23 @@ export class DatabaseService {
     }
 
     /**
-     * @throws {ItemNotFoundException} if the item is not found
+     * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getItemByName(itemName: string): Promise<RequiredItemRaw> {
         const item: RequiredItemRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Items WHERE ItemName = ?`, itemName);
         if (!item) throw new ItemNotFoundException('Item not found');
 
         return item;
+    }
+
+    /**
+     * @throws {ItemNotFoundException} if the item could not be found
+     */
+    public static async getCartByUUID(uuid: string): Promise<Array<CartIngredient>> {
+        const cart = await DatabaseService.db.get(`SELECT * FROM Cart WHERE UUID = ?`, uuid);
+        if (!cart) throw new ItemNotFoundException('Cart not found');
+
+        return JSON.parse(cart.Contents);
     }
 
 
@@ -303,7 +313,7 @@ export class DatabaseService {
         return result.lastID;
     }
 
-    public static async insertCart(contents: Array<{ ingredient: Ingredient; quantity: number; measurement: string; }>): Promise<string> {
+    public static async insertCart(contents: Array<CartIngredient>): Promise<string> {
         const uuid = uuidv4();
         const result = await DatabaseService.db.run(`INSERT INTO Cart (UUID, Contents) VALUES (?, ?)`, uuid, JSON.stringify(contents));
         if (!result.lastID) throw new Error('Error inserting cart');
