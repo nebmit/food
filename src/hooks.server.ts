@@ -29,7 +29,7 @@ function isProtectedRoute(pathname: string) {
     if (pathname.startsWith('/recipe')) {
         return true;
     }
-    if (pathname.startsWith('/cart/')) {
+    if (pathname.match(/\/cart\/.*/)) {
         return false;
     }
     return !unProtectedRoutes.includes(pathname);

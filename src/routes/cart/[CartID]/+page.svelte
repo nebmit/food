@@ -11,7 +11,7 @@
     }
 </script>
 
-<div class="p-4 bg-gray-100 min-h-screen">
+<div class="p-4 min-h-screen">
     <h1 class="text-2xl font-bold text-center mb-6">Shopping List</h1>
     <div class="flex flex-col space-y-3 md:w-1/2 mx-auto">
         {#each cart as ingredient}
