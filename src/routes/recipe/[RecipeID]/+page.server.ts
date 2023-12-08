@@ -55,7 +55,7 @@ export const actions = {
         }
 
         if (image) {
-            const imagePath = path.join('static', 'images', 'recipes', `${recipeId}.webp`);
+            const imagePath = path.join('upload', 'images', 'recipes', `${recipeId}.webp`);
             const sharpInstance = sharp(Buffer.from(await image.arrayBuffer()));
             sharpInstance
                 .resize(800)
