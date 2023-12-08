@@ -7,7 +7,6 @@ export function parseInstruction(
     return parseInstructionScaled(instruction, ingredients, 1);
 }
 
-
 export function parseInstructionScaled(
     instruction: string,
     ingredients: RecipeIngredient[],
@@ -17,7 +16,7 @@ export function parseInstructionScaled(
         /\{(?:(\d+(\.\d+)?):)?([\w\s]+)\}/g,
         (match, percentage, _, ingredientName) => {
             const ingredient = ingredients.find(
-                (ing) => ing.Ingredient.IngredientName === ingredientName
+                (ing) => ing.Ingredient.IngredientName.toLowerCase() === ingredientName.toLowerCase()
             );
             if (ingredient) {
                 if (percentage) {
