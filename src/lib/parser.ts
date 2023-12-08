@@ -13,7 +13,7 @@ export function parseInstructionScaled(
     scalingFactor: number
 ): string {
     return instruction.replace(
-        /\{(?:(\d+(\.\d+)?):)?([\w\s]+)\}/g,
+        /\{(?:(\d+(\.\d+)?):)?([\w\s-]+)\}/g,
         (match, percentage, _, ingredientName) => {
             const ingredient = ingredients.find(
                 (ing) => ing.Ingredient.IngredientName.toLowerCase() === ingredientName.toLowerCase()
