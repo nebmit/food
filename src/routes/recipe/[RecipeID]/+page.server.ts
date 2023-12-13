@@ -17,7 +17,11 @@ export async function load({ params }) {
 }
 
 export const actions = {
-    modifyRecipe: async ({ request }) => {
+    modifyRecipe: async ({ request, locals }) => {
+        if (!locals.user?.isAuthenticated) {
+            return fail(401, { error: "Unauthorized." });
+        }
+
         const data = await request.formData();
 
         const stringRecipeId = data.get("recipeID") as string;

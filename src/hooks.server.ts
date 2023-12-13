@@ -1,7 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
 const ssoURL = import.meta.env.VITE_SSO_URL;
-const unProtectedRoutes = ['/'];
 
 export async function handle({ event, resolve }) {
     const sessionId = event.cookies.get('session_id');
@@ -27,12 +26,20 @@ export async function handle({ event, resolve }) {
 
 function isProtectedRoute(pathname: string) {
     if (pathname.startsWith('/recipe')) {
-        return true;
+        return false;
+    }
+    if (pathname.startsWith('/images')) {
+        return false;
     }
     if (pathname.match(/\/cart\/.*/)) {
         return false;
     }
-    return !unProtectedRoutes.includes(pathname);
+    switch (pathname) {
+    case '/':
+    case '/explore':
+        return false;
+    }
+    return true;
 }
 
 async function validateToken(token: string | undefined) {

@@ -149,13 +149,17 @@
 <style>
     /* Custom CSS for smooth expand/collapse */
     .collapse-transition {
-        transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        transition:
+            max-height 0.5s ease-in-out,
+            opacity 0.5s ease-in-out;
         max-height: 0;
         opacity: 0;
         overflow: hidden;
     }
     .expand-transition {
-        transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+        transition:
+            max-height 0.5s ease-in-out,
+            opacity 0.5s ease-in-out;
         max-height: 12rem; /* approx size of three buttons */
         opacity: 1;
     }

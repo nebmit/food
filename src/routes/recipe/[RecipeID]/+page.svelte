@@ -11,7 +11,9 @@
         RecipeIngredient,
         RecipeItem,
     } from "$lib/types";
-    import { onDestroy } from "svelte";
+    import { getContext, onDestroy } from "svelte";
+    import type { Writable } from "svelte/store";
+    import type { User } from "../../../app";
     import Modal from "./modal.svelte";
 
     export let data: { recipe: Recipe };
@@ -22,10 +24,17 @@
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
 
-    const imageUrl = "/images/recipes/" + recipe.RecipeID;
+    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
 
     pageTitle.set(recipe.RecipeName);
     onDestroy(() => pageTitle.set(null));
+
+    const userStore = getContext<Writable<User>>("user");
+
+    let user: User;
+    userStore.subscribe((value: User) => {
+        user = value;
+    });
 
     let showEditModal = false;
 
@@ -100,14 +109,19 @@
             class="absolute top-0 left-0 w-full h-full rounded-t-lg object-cover object-center blur-sm"
             src={imageUrl}
             alt={recipe.RecipeName}
-        /><button
-            class="absolute top-2 right-2 bg-slate-400 bg-opacity-40 hover:bg-opacity-60 text-white font-bold py-2 px-4 rounded"
-            on:click={() => {
-                setToCart(recipe, selectedPortion);
-            }}
-        >
-            Add to Shopping List
-        </button>
+        />
+
+        {#if user.isAuthenticated}
+            <button
+                class="absolute top-2 right-2 bg-slate-400 bg-opacity-40 hover:bg-opacity-60 text-white font-bold py-2 px-4 rounded"
+                on:click={() => {
+                    setToCart(recipe, selectedPortion);
+                }}
+            >
+                Add to Shopping List
+            </button>
+        {/if}
+
         <div
             class="relative text-center top-1/3 p-2 px-4 text-white text-3xl font-bold text-shadow"
         >
@@ -164,15 +178,21 @@
 
             <!-- Recipe Version -->
             <div class="hidden lg:flex items-center">
-                <a
-                    href="/version/{recipeVersion.RecipeVersionID}"
-                    class="text-blue-400 hover:text-blue-600 transition duration-700 ease-in-out mr-4"
-                    >#{recipeVersion.RecipeVersionID}
-                </a>
-                <button
-                    class="bg-blue-700 text-white hover:bg-blue-800 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
-                    on:click={() => (showEditModal = true)}>Edit</button
-                >
+                {#if user.isAuthenticated}
+                    <a
+                        href="/version/{recipeVersion.RecipeVersionID}"
+                        class="text-blue-400 hover:text-blue-600 transition duration-700 ease-in-out mr-4"
+                        >#{recipeVersion.RecipeVersionID}
+                    </a>
+                    <button
+                        class="bg-blue-700 text-white hover:bg-blue-800 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
+                        on:click={() => (showEditModal = true)}>Edit</button
+                    >
+                {:else}
+                    <span class="text-blue-400 mr-4">
+                        #{recipeVersion.RecipeVersionID}
+                    </span>
+                {/if}
             </div>
         </div>
         <hr />

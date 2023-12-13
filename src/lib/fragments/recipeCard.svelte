@@ -6,7 +6,7 @@
 
     let recipeVersion = recipe.MainVersion;
 
-    const imageUrl = "/images/recipes/" + recipe.RecipeID;
+    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
     const complexity = recipeVersion.ComplexityRating ?? 0;
     const mayhem = recipeVersion.MayhemRating ?? 0;
 </script>
