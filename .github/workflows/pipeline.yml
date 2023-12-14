@@ -46,7 +46,7 @@ jobs:
         REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
         REMOTE_USER: ${{ secrets.REMOTE_USER }}
         TARGET: ${{ secrets.REMOTE_TARGET }}
-        EXCLUDE: '/node_modules'
+        EXCLUDE: 'node_modules/ .git/ .github/ .svelte-kit/ database.db .env .env.*'
 
     - name: Install dependencies on server
       uses: appleboy/ssh-action@master
