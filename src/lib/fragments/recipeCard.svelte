@@ -29,15 +29,25 @@
             </div>
         </div>
         <div class="p-4">
-            <h2 class="text-lg font-semibold">{recipe.RecipeName}</h2>
+            <p
+                class="text-lg font-semibold h-12 overflow-hidden line-clamp-2 overflow-ellipsis leading-tight"
+            >
+                {recipe.RecipeName}
+            </p>
             <div class="flex flex-row space-x-2">
                 <div class="text-cyan-500">
                     Complexity
-                    <span use:stars={{ total: 5, filled: complexity }} />
+                    <span
+                        class="font-bold"
+                        use:stars={{ total: 5, filled: complexity }}
+                    />
                 </div>
                 <div class="text-purple-500">
                     Mayhem
-                    <span use:stars={{ total: 5, filled: mayhem }} />
+                    <span
+                        class="font-bold"
+                        use:stars={{ total: 5, filled: mayhem }}
+                    />
                 </div>
             </div>
         </div>
