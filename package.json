@@ -33,7 +33,6 @@
 	"type": "module",
 	"dependencies": {
 		"argon2": "^0.31.2",
-		"dotenv": "^16.3.1",
 		"mysql": "^2.18.1",
 		"sharp": "^0.32.6",
 		"sqlite": "^5.1.1",
