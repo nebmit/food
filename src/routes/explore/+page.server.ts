@@ -3,7 +3,7 @@ import type { Recipe } from "$lib/types";
 
 export async function load() {
     try {
-        const allRecipes: Recipe[] = await DatabaseService.getRecipes();
+        const allRecipes: Recipe[] = await DatabaseService.getAllRecipes();
         return {
             allRecipes
         };

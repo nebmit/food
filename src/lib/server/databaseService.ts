@@ -21,6 +21,11 @@ export class DatabaseService {
     // Public GET methods
     // ************ //
 
+    public static async getAllRecipes(): Promise<Recipe[]> {
+        const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes`);
+        return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
+    }
+
     public static async getRecipes(limit = 10): Promise<Recipe[]> {
         const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes LIMIT ?`, limit);
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
