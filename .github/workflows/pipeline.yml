@@ -55,7 +55,7 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          source ~/.bashrc
+          source ~/.nvm/nvm.sh
           nvm use default
           cd ${{ secrets.REMOTE_TARGET }}
           npm install --production
@@ -67,6 +67,6 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          source ~/.bashrc
+          source ~/.nvm/nvm.sh
           nvm use default
           pm2 restart food
