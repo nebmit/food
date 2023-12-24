@@ -92,7 +92,7 @@ async function processAndInsertRecipeVersionFromString(input: string): Promise<n
 }
 
 function validateString(s: string): boolean {
-    const metaSectionRegex = /^\d+ ;; .* ;; \d+ ;; \d+ ;; ([1-5]) ;; ([1-5]) ;;\s*INGREDIENTS\s*/;
+    const metaSectionRegex = /^\d+(\.\d+)? ;; .* ;; \d+(\.\d+)? ;; \d+(\.\d+)? ;; ([1-5]) ;; ([1-5]) ;;\s*INGREDIENTS\s*/;
     const ingredientRegex = /.* :: \d+(\.\d+)? :: .* ;;\s*/g;
     const itemRegex = /ITEMS\s*([^0-9]+ :: \d+(\.\d+)? ;;\s*)+/;
     const instructionRegex = /INSTRUCTIONS\s*(\d+ :: .* ;;\s*)+/;

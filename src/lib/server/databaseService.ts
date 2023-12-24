@@ -249,8 +249,8 @@ export class DatabaseService {
 
         if (!filteredRecipeVersion.PortionQuantity) throw new Error('PortionQuantity is required');
         if (!filteredRecipeVersion.PortionDescriptor) throw new Error('PortionDescriptor is required');
-        if (!filteredRecipeVersion.ActiveTimeMinutes) throw new Error('ActiveTimeMinutes is required');
-        if (!filteredRecipeVersion.PassiveTimeMinutes) throw new Error('PassiveTimeMinutes is required');
+        if (filteredRecipeVersion.ActiveTimeMinutes === null || filteredRecipeVersion.ActiveTimeMinutes === undefined) throw new Error('ActiveTimeMinutes is required');
+        if (filteredRecipeVersion.PassiveTimeMinutes === null || filteredRecipeVersion.PassiveTimeMinutes === undefined) throw new Error('PassiveTimeMinutes is required');
         if (!filteredRecipeVersion.ComplexityRating) throw new Error('ComplexityRating is required');
         if (!filteredRecipeVersion.MayhemRating) throw new Error('MayhemRating is required');
 
