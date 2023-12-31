@@ -20,6 +20,12 @@ def main():
     Main function that connects to the SQLite database, fetches recipes, and processes each recipe.
     """
     try:
+        # Remove the output directory if it exists
+        shutil.rmtree(OUTPUT_BASE_PATH)
+    except OSError as error:
+        logging.warning("Failed to remove output directory: %s", error)
+
+    try:
         # Connect to the SQLite Database
         conn = sqlite3.connect(DATABASE_PATH)
     except sqlite3.Error as error:
