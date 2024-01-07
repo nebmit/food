@@ -6,7 +6,9 @@
 /build
 /package
 /upload/images/recipes/*
+data
 database.db
 node_modules
+recipes
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
