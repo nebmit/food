@@ -10,21 +10,17 @@ const localPath = path.join(path.dirname(packageUpSync() || '/'), 'data');
 
 
 export async function update() {
-    try {
-        // Check if the directory exists
-        if (fs.existsSync(localPath)) {
-            // If exists, fetch all branches and set the directory to the repository
-            const repo = git.cwd(localPath);
-            await repo.fetch();
+    // Check if the directory exists
+    if (fs.existsSync(localPath)) {
+        // If exists, fetch all branches and set the directory to the repository
+        const repo = git.cwd(localPath);
+        await repo.fetch();
 
-            // Pull the latest changes from the current branch's upstream branch
-            await repo.pull();
-        } else {
-            // If not exists, clone the repository
-            await git.clone(repoUrl, localPath);
-        }
-    } catch (err) {
-        throw err;
+        // Pull the latest changes from the current branch's upstream branch
+        await repo.pull();
+    } else {
+        // If not exists, clone the repository
+        await git.clone(repoUrl, localPath);
     }
 }
 

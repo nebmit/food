@@ -13,8 +13,8 @@ const verify_signature = async (req: Request) => {
         .createHmac("sha256", WEBHOOK_SECRET)
         .update(JSON.stringify(req.body))
         .digest("hex");
-    let trusted = Buffer.from(`sha256=${signature}`, 'ascii');
-    let untrusted = Buffer.from(req.headers.get("x-hub-signature-256") || '', 'ascii');
+    const trusted = Buffer.from(`sha256=${signature}`, 'ascii');
+    const untrusted = Buffer.from(req.headers.get("x-hub-signature-256") || '', 'ascii');
     if (trusted.length !== untrusted.length) {
         return false;
     }
@@ -33,9 +33,17 @@ async function updateDatabase() {
         // Insert the recipe into the database
         const recipeId = await processAndInsertRecipeFromString(rawRecipe.name, rawRecipe.instructions);
 
-        // Upload the image to the cloud
+        // Read the image
         const image = fs.readFileSync(rawRecipe.imagePath);
         const targetImagePath = path.join('upload', 'images', 'recipes', `${recipeId}.webp`);
+
+        // Create the directory if it does not exist
+        const targetImageDirectory = path.dirname(targetImagePath);
+        if (!fs.existsSync(targetImageDirectory)) {
+            fs.mkdirSync(targetImageDirectory, { recursive: true });
+        }
+
+        // Copy the image to the upload directory
         const sharpInstance = sharp(image);
         sharpInstance
             .resize(800)

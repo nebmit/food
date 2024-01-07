@@ -35,10 +35,10 @@ function isProtectedRoute(pathname: string) {
         return false;
     }
     switch (pathname) {
-        case '/':
-        case '/explore':
-        case '/webhook':
-            return false;
+    case '/':
+    case '/explore':
+    case '/webhook':
+        return false;
     }
     return true;
 }
