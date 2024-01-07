@@ -1,44 +1,107 @@
 import { ItemNotFoundException, ParsingException } from "../types";
 import { DatabaseService } from "./databaseService";
-import type { IngredientRaw, RequiredItemRaw } from "./databaseTypes";
+import type { IngredientRaw, RecipeVersionRaw, RequiredItemRaw } from "./databaseTypes";
 
-async function processAndInsertRecipeVersionFromString(input: string): Promise<number> {
-    const metaSection = input.split('INGREDIENTS')[0].trim();
-    const ingredientSection = input.split('INGREDIENTS')[1].split('ITEMS')[0].trim();
-    const itemSection = input.split('ITEMS')[1].split('INSTRUCTIONS')[0].trim();
-    const instructionSection = input.split('INSTRUCTIONS')[1].trim();
+interface ParsedRecipe {
+    meta: Partial<RecipeVersionRaw>;
+    ingredients: Array<{
+        IngredientName: string;
+        Quantity: number;
+        Measurement: string;
+    }>;
+    items: Array<{
+        ItemName: string;
+        Quantity: number;
+    }>;
+    instructions: Array<{
+        StepNumber: number;
+        StepDetail: string;
+    }>;
+}
+
+// Parse the recipe text into structured data
+function parseRecipeText(input: string): ParsedRecipe {
+    // Split the sections
+    const sections = input.split('INSTRUCTIONS');
+    const preInstructionSections = sections[0].split('ITEMS');
+    const metaSection = preInstructionSections[0].split('INGREDIENTS')[0].trim();
+    const ingredientSection = preInstructionSections[0].split('INGREDIENTS')[1].trim();
+    const itemSection = preInstructionSections[1].trim();
+    const instructionSection = sections[1].trim();
 
     if (!metaSection || !ingredientSection || !itemSection || !instructionSection) {
         throw new ParsingException('Invalid recipe format');
     }
 
+    // Process Meta Section
     const metaValues = metaSection.split(';;').map(s => s.trim());
-
     if (metaValues.length !== 7) {
         throw new ParsingException('Invalid meta section');
     }
-
-    // Handle Recipe Version
-    const insertedVersionId = await DatabaseService.insertRecipeVersion({
+    const meta = {
         PortionQuantity: parseFloat(metaValues[0]),
         PortionDescriptor: metaValues[1],
         ActiveTimeMinutes: parseInt(metaValues[2], 10),
         PassiveTimeMinutes: parseInt(metaValues[3], 10),
         ComplexityRating: parseInt(metaValues[4], 10),
         MayhemRating: parseInt(metaValues[5], 10)
+    };
+
+    // Process Ingredients
+    const ingredientValues = ingredientSection.split(';;').filter(Boolean);
+    const ingredients = ingredientValues.map(value => {
+        const [name, quantity, measurement] = value.split('::').map(s => s.trim());
+        return {
+            IngredientName: name,
+            Quantity: parseFloat(quantity),
+            Measurement: measurement
+        };
     });
 
-    // Handle Ingredients
-    const ingredientValues = ingredientSection.split(';;').filter(Boolean);
-    for (const ingredientString of ingredientValues) {
-        const [ingredientName, quantity, measurement] = ingredientString.split('::').map(s => s.trim());
+    // Process Items
+    const itemValues = itemSection.split(';;').filter(Boolean);
+    const items = itemValues.map(value => {
+        const [name, quantity] = value.split('::').map(s => s.trim());
+        return {
+            ItemName: name,
+            Quantity: parseInt(quantity, 10)
+        };
+    });
 
+    // Process Instructions
+    const instructionValues = instructionSection.split(';;').filter(Boolean);
+    const instructions = instructionValues.map(value => {
+        const [stepNumber, detail] = value.split('::').map(s => s.trim());
+        return {
+            StepNumber: parseInt(stepNumber, 10),
+            StepDetail: detail
+        };
+    });
+
+    // Return the structured recipe
+    return {
+        meta,
+        ingredients,
+        items,
+        instructions
+    };
+}
+
+
+async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promise<number> {
+    const { meta, ingredients, items, instructions } = parsedRecipe;
+
+    // Insert Meta and get the inserted recipe version ID
+    const insertedVersionId = await DatabaseService.insertRecipeVersion(meta);
+
+    // Insert Ingredients
+    for (const parsedIngredient of ingredients) {
         let ingredient: IngredientRaw;
         try {
-            ingredient = await DatabaseService.getIngredientByName(ingredientName);
+            ingredient = await DatabaseService.getIngredientByName(parsedIngredient.IngredientName);
         } catch (e: unknown) {
             if (e instanceof ItemNotFoundException) {
-                const ingredientId = await DatabaseService.insertIngredient({ IngredientName: ingredientName });
+                const ingredientId = await DatabaseService.insertIngredient({ IngredientName: parsedIngredient.IngredientName });
                 ingredient = await DatabaseService.getIngredientById(ingredientId);
             } else {
                 throw e;
@@ -48,22 +111,19 @@ async function processAndInsertRecipeVersionFromString(input: string): Promise<n
         await DatabaseService.insertRecipeVersionIngredient({
             IngredientID: ingredient.IngredientID,
             RecipeVersionID: insertedVersionId,
-            Quantity: parseFloat(quantity),
-            Measurement: measurement
+            Quantity: parsedIngredient.Quantity,
+            Measurement: parsedIngredient.Measurement
         });
     }
 
-    // Handle Items
-    const itemValues = itemSection.split(';;').filter(Boolean);
-    for (const itemString of itemValues) {
-        const [itemName, quantity] = itemString.split('::').map(s => s.trim());
-
+    // Insert Items
+    for (const parsedItem of items) {
         let item: RequiredItemRaw;
         try {
-            item = await DatabaseService.getItemByName(itemName);
+            item = await DatabaseService.getItemByName(parsedItem.ItemName);
         } catch (e: unknown) {
             if (e instanceof ItemNotFoundException) {
-                const itemId = await DatabaseService.insertItem({ ItemName: itemName });
+                const itemId = await DatabaseService.insertItem({ ItemName: parsedItem.ItemName });
                 item = await DatabaseService.getItemById(itemId);
             } else {
                 throw e;
@@ -73,18 +133,16 @@ async function processAndInsertRecipeVersionFromString(input: string): Promise<n
         await DatabaseService.insertRecipeVersionItem({
             ItemID: item.ItemID,
             RecipeVersionID: insertedVersionId,
-            Quantity: parseInt(quantity, 10)
+            Quantity: parsedItem.Quantity
         });
     }
 
-    // Handle Instructions
-    const instructionValues = instructionSection.split(';;').filter(Boolean);
-    for (const instructionString of instructionValues) {
-        const [stepNumber, detail] = instructionString.split('::').map(s => s.trim());
+    // Insert Instructions
+    for (const instruction of instructions) {
         await DatabaseService.insertInstruction({
             RecipeVersionID: insertedVersionId,
-            StepNumber: parseInt(stepNumber, 10),
-            StepDetail: detail
+            StepNumber: instruction.StepNumber,
+            StepDetail: instruction.StepDetail
         });
     }
 
@@ -127,6 +185,8 @@ export async function processAndInsertRecipeFromString(recipeName: string, input
     if (!validateString(input)) {
         throw new ParsingException('Invalid recipe format');
     }
-    const versionId = await processAndInsertRecipeVersionFromString(input);
+
+    const parsedRecipe = parseRecipeText(input);
+    const versionId = await insertRecipeVersionFromString(parsedRecipe);
     return await DatabaseService.insertRecipe({ RecipeName: recipeName, MainVersionID: versionId });
 }
