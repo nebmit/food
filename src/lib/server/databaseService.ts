@@ -17,6 +17,18 @@ export class DatabaseService {
         DatabaseService.db = await open({ filename: dbName, driver: sqlite3.Database });
     }
 
+    public static async clearRecipes() {
+        await DatabaseService.db.run(`DELETE FROM Recipes`);
+        await DatabaseService.db.run(`DELETE FROM RecipeVersions`);
+        await DatabaseService.db.run(`DELETE FROM RecipeVersionIngredients`);
+        await DatabaseService.db.run(`DELETE FROM RecipeVersionItems`);
+        await DatabaseService.db.run(`DELETE FROM Instructions`);
+        await DatabaseService.db.run(`DELETE FROM Ingredients`);
+        await DatabaseService.db.run(`DELETE FROM IngredientTags`);
+        await DatabaseService.db.run(`DELETE FROM IngredientTagAssignment`);
+        await DatabaseService.db.run(`DELETE FROM Items`);
+    }
+
     // ************ //
     // Public GET methods
     // ************ //
