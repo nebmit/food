@@ -58,6 +58,17 @@ export class DatabaseService {
         };
     }
 
+    public static async getRecipeByName(recipeName: string): Promise<Recipe> {
+        const recipe: RecipeRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Recipes WHERE RecipeName = ?`, recipeName);
+        if (!recipe) throw new ItemNotFoundException('Recipe not found');
+
+        return {
+            RecipeID: recipe.RecipeID,
+            RecipeName: recipe.RecipeName,
+            MainVersion: await DatabaseService.getRecipeVersionById(recipe.MainVersionID),
+        };
+    }
+
     /**
      * @throws {ItemNotFoundException} if the item could not be found
      */

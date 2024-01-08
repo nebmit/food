@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET({ params }) {
-    const recipeID = params.RecipeID;
-    const imagePath = path.join('upload', 'images', 'recipes', `${recipeID}.webp`);
+    const recipeName = decodeURIComponent(params.RecipeName);
+    const imagePath = path.join('upload', 'images', 'recipes', `${recipeName}.webp`);
     if (!fs.existsSync(imagePath)) {
         return new Response(null, { status: 404 });
     }

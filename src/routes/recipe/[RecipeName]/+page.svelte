@@ -22,7 +22,8 @@
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
 
-    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
+    const imageUrl =
+        "/images/recipes/" + encodeURIComponent(recipe.RecipeName) + ".webp";
 
     pageTitle.set(recipe.RecipeName);
     onDestroy(() => pageTitle.set(null));

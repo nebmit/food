@@ -4,8 +4,8 @@ import { error } from '@sveltejs/kit';
 
 export async function load({ params }) {
     try {
-        const recipeId = parseInt(params.RecipeID, 10);
-        const recipe: Recipe = await DatabaseService.getRecipeById(recipeId);
+        const recipeName = decodeURIComponent(params.RecipeName);
+        const recipe: Recipe = await DatabaseService.getRecipeByName(recipeName);
         return {
             recipe
         };

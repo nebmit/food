@@ -5,13 +5,14 @@
     export let recipe: Recipe;
 
     let recipeVersion = recipe.MainVersion;
+    const encodedRecipeName = encodeURIComponent(recipe.RecipeName);
 
-    const imageUrl = "/images/recipes/" + recipe.RecipeID + ".webp";
+    const imageUrl = "/images/recipes/" + encodedRecipeName + ".webp";
     const complexity = recipeVersion.ComplexityRating ?? 0;
     const mayhem = recipeVersion.MayhemRating ?? 0;
 </script>
 
-<a href={"/recipe/" + recipe.RecipeID}>
+<a href={"/recipe/" + encodedRecipeName}>
     <div
         class="w-64 bg-white rounded-lg shadow-md cursor-pointer select-none hover:shadow-xl hover:scale-105 transition ease-in-out duration-200 transform"
     >
