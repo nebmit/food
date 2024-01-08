@@ -38,10 +38,14 @@ export class DatabaseService {
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
     }
 
-    public static async getRecipes(limit = 10): Promise<Recipe[]> {
-        const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes LIMIT ?`, limit);
+    public static async getRandomRecipes(limit = 10): Promise<Recipe[]> {
+        const recipes: RecipeRaw[] = await DatabaseService.db.all(
+            `SELECT * FROM Recipes ORDER BY RANDOM() LIMIT ?`,
+            limit
+        );
         return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
     }
+
 
     // GET BY ID methods
     /**

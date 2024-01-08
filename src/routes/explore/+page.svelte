@@ -11,7 +11,7 @@
 
     function searchRecipes() {
         recipes = data.allRecipes.filter((recipe) =>
-            recipe.RecipeName.toLowerCase().includes(searchQuery.toLowerCase())
+            recipe.RecipeName.toLowerCase().includes(searchQuery.toLowerCase()),
         );
         const url = new URL(window.location.href);
         if (searchQuery === "") url.searchParams.delete("query");

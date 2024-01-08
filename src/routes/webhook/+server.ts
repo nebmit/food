@@ -9,7 +9,6 @@ import sharp from "sharp";
 const WEBHOOK_SECRET: string = process.env.WEBHOOK_SECRET || "";
 
 const verify_signature = async (req: Request) => {
-    return true;
     const signature = crypto
         .createHmac("sha256", WEBHOOK_SECRET)
         .update(JSON.stringify(req.body))

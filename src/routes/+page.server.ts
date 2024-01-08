@@ -3,8 +3,7 @@ import type { Recipe } from "$lib/types";
 
 export async function load() {
     try {
-        const allRecipes: Recipe[] = await DatabaseService.getAllRecipes();
-        const randomRecipes = allRecipes.sort(() => Math.random() - Math.random()).slice(0, 3);
+        const randomRecipes: Recipe[] = await DatabaseService.getRandomRecipes(3);
         return {
             randomRecipes
         };
