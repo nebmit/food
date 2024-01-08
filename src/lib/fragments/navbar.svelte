@@ -44,30 +44,7 @@
     <!-- Desktop Navbar -->
     <div class="hidden sm:flex items-center h-16">
         <!-- Left Element -->
-        <div class="flex-shrink-0 w-1/4 pl-4">
-            <a
-                href="/create"
-                class=" flex px-2 py-1 rounded w-fit transition-all duration-200 hover:bg-gray-200"
-                aria-label="Create a new recipe"
-            >
-                <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                    stroke="currentColor"
-                >
-                    <path
-                        d="M4 12H20M12 4V20"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-                </svg>
-                <span class="pl-1">Create</span>
-            </a>
-        </div>
+        <div class="flex-shrink-0 w-1/4 pl-4"></div>
 
         <!-- Centered Elements -->
         <div class="flex-grow flex justify-center">

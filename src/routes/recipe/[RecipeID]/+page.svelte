@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { deserialize } from "$app/forms";
     import { stars } from "$lib/actions";
     import { setToCart } from "$lib/cart";
     import Navbar from "$lib/fragments/navbar.svelte";
@@ -14,7 +13,6 @@
     import { getContext, onDestroy } from "svelte";
     import type { Writable } from "svelte/store";
     import type { User } from "../../../app";
-    import Modal from "./modal.svelte";
 
     export let data: { recipe: Recipe };
     const recipe = data.recipe;
@@ -36,68 +34,9 @@
         user = value;
     });
 
-    let showEditModal = false;
-
     let selectedPortion = recipeVersion.PortionQuantity;
     $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
-
-    async function onSave(image: File, name: string): Promise<string | void> {
-        name = name.trim();
-
-        if (image && (image.type !== "image/png" || image.size > 10000000)) {
-            return "Please provide a valid image file less than 10MB in size";
-        }
-        if (
-            name &&
-            (name.length > 50 || name.length < 3 || name.match(/[^a-zA-Z0-9 ]/))
-        ) {
-            return "Please provide a valid name between 3 and 50 characters";
-        }
-
-        const formData = new FormData();
-        if (image) formData.append("image", image);
-        if (name) formData.append("name", name);
-
-        if ([...formData.entries()].length === 0) {
-            showEditModal = false;
-            return;
-        }
-
-        formData.append("recipeID", recipe.RecipeID.toString());
-
-        try {
-            const response = await fetch("?/modifyRecipe", {
-                method: "POST",
-                body: formData,
-            });
-            if (!response.ok) {
-                throw new Error("Network response was not ok");
-            }
-            const data = await response.text();
-
-            const result = deserialize(data);
-            if (result.type === "success") {
-                location.reload();
-                showEditModal = false;
-            } else {
-                console.error("There was a problem with the server:", result);
-                return "Something went wrong. Please try again.";
-            }
-        } catch (e: unknown) {
-            console.error("There was a problem with the fetch operation:", e);
-            return e instanceof Error ? e.message : "Something went wrong.";
-        }
-    }
 </script>
-
-{#if showEditModal}
-    <Modal
-        {imageUrl}
-        recipeName={recipe.RecipeName}
-        {onSave}
-        onCancel={() => (showEditModal = false)}
-    />
-{/if}
 
 <div class="hidden sm:inline">
     <Navbar />
@@ -178,21 +117,9 @@
 
             <!-- Recipe Version -->
             <div class="hidden lg:flex items-center">
-                {#if user.isAuthenticated}
-                    <a
-                        href="/version/{recipeVersion.RecipeVersionID}"
-                        class="text-blue-400 hover:text-blue-600 transition duration-700 ease-in-out mr-4"
-                        >#{recipeVersion.RecipeVersionID}
-                    </a>
-                    <button
-                        class="bg-blue-700 text-white hover:bg-blue-800 rounded px-4 py-1 font-semibold transition duration-200 ease-in-out"
-                        on:click={() => (showEditModal = true)}>Edit</button
-                    >
-                {:else}
-                    <span class="text-blue-400 mr-4">
-                        #{recipeVersion.RecipeVersionID}
-                    </span>
-                {/if}
+                <span class="text-blue-400 mr-4">
+                    #{recipeVersion.RecipeVersionID}
+                </span>
             </div>
         </div>
         <hr />
