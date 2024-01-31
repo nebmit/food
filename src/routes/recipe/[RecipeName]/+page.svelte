@@ -36,6 +36,7 @@
     });
 
     let selectedPortion = recipeVersion.PortionQuantity;
+    $: selectedPortion = Math.max(Math.min(selectedPortion, 99), 1);
     $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
 </script>
 

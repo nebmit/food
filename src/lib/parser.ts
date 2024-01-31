@@ -22,7 +22,8 @@ export function parseInstructionScaled(
                 if (percentage) {
                     const adjustedQuantity = ingredient.Quantity * scalingFactor;
                     const calculatedQuantity = adjustedQuantity * parseFloat(percentage);
-                    return `${calculatedQuantity} ${ingredient.Measurement || ""} ${ingredientName}`; // If percentage, also return quantity and measurement.
+                    const calculatedQuantityRounded = Math.round(calculatedQuantity * 100) / 100;
+                    return `${calculatedQuantityRounded} ${ingredient.Measurement || ""} ${ingredientName}`; // If percentage, also return quantity and measurement.
                 }
                 return ingredientName; // If no percentage, just return the ingredient name.
             }

@@ -3,99 +3,124 @@ import { DatabaseService } from "./databaseService";
 import type { IngredientRaw, RecipeVersionRaw, RequiredItemRaw } from "./databaseTypes";
 
 interface ParsedRecipe {
-    meta: Partial<RecipeVersionRaw>;
-    ingredients: Array<{
+    Meta: Partial<RecipeVersionRaw>;
+    Tags: string[];
+    Ingredients: Array<{
         IngredientName: string;
         Quantity: number;
         Measurement: string;
     }>;
-    items: Array<{
+    CommonIngredients: Array<{
+        IngredientName: string;
+        Quantity: number;
+        Measurement: string;
+    }>;
+    Items: Array<{
         ItemName: string;
         Quantity: number;
     }>;
-    instructions: Array<{
-        StepNumber: number;
-        StepDetail: string;
-    }>;
+    Instructions: string[];
+    Note: string;
 }
 
-// Parse the recipe text into structured data
-function parseRecipeText(input: string): ParsedRecipe {
-    // Split the sections
-    const sections = input.split('INSTRUCTIONS');
-    const preInstructionSections = sections[0].split('ITEMS');
-    const metaSection = preInstructionSections[0].split('INGREDIENTS')[0].trim();
-    const ingredientSection = preInstructionSections[0].split('INGREDIENTS')[1].trim();
-    const itemSection = preInstructionSections[1].trim();
-    const instructionSection = sections[1].trim();
-
-    if (!metaSection || !ingredientSection || !itemSection || !instructionSection) {
-        throw new ParsingException('Invalid recipe format');
-    }
-
-    // Process Meta Section
-    const metaValues = metaSection.split(';;').map(s => s.trim());
-    if (metaValues.length !== 7) {
-        throw new ParsingException('Invalid meta section');
-    }
-    const meta = {
-        PortionQuantity: parseFloat(metaValues[0]),
-        PortionDescriptor: metaValues[1],
-        ActiveTimeMinutes: parseInt(metaValues[2], 10),
-        PassiveTimeMinutes: parseInt(metaValues[3], 10),
-        ComplexityRating: parseInt(metaValues[4], 10),
-        MayhemRating: parseInt(metaValues[5], 10)
+function parseRecipeText(inputText: string) {
+    const recipe: ParsedRecipe = {
+        Meta: {
+            PortionQuantity: undefined,
+            PortionDescriptor: '',
+            ActiveTimeMinutes: undefined,
+            PassiveTimeMinutes: undefined,
+            ComplexityRating: undefined,
+            MayhemRating: undefined
+        },
+        Tags: [],
+        Ingredients: [],
+        CommonIngredients: [],
+        Items: [],
+        Instructions: [],
+        Note: ''
     };
 
-    // Process Ingredients
-    const ingredientValues = ingredientSection.split(';;').filter(Boolean);
-    const ingredients = ingredientValues.map(value => {
-        const [name, quantity, measurement] = value.split('::').map(s => s.trim());
-        return {
-            IngredientName: name,
-            Quantity: parseFloat(quantity),
-            Measurement: measurement
-        };
-    });
+    let currentSection = null;
 
-    // Process Items
-    const itemValues = itemSection.split(';;').filter(Boolean);
-    const items = itemValues.map(value => {
-        const [name, quantity] = value.split('::').map(s => s.trim());
-        return {
-            ItemName: name,
-            Quantity: parseInt(quantity, 10)
-        };
-    });
+    const lines = inputText.split('\n');
+    for (const line of lines) {
+        // Ignore empty lines and comments
+        if (!line.trim() || line.trim().startsWith('#')) {
+            continue;
+        }
 
-    // Process Instructions
-    const instructionValues = instructionSection.split(';;').filter(Boolean);
-    const instructions = instructionValues.map(value => {
-        const [stepNumber, detail] = value.split('::').map(s => s.trim());
-        return {
-            StepNumber: parseInt(stepNumber, 10),
-            StepDetail: detail
-        };
-    });
+        // Check for section headers
+        if (line.toUpperCase() === 'TAGS' || line.toUpperCase() === 'INGREDIENTS' || line.toUpperCase() === 'COMMON INGREDIENTS' || line.toUpperCase() === 'ITEMS' || line.toUpperCase() === 'INSTRUCTIONS' || line.toUpperCase() === 'NOTE') {
+            currentSection = line.toUpperCase();
+            continue;
+        }
 
-    // Return the structured recipe
-    return {
-        meta,
-        ingredients,
-        items,
-        instructions
-    };
+        switch (currentSection) {
+            case null:
+                parseMetaSection(line, recipe.Meta);
+                break;
+            case 'TAGS':
+                recipe.Tags.push(line.trim());
+                break;
+            case 'INGREDIENTS':
+            case 'COMMON INGREDIENTS':
+                const ingredient = parseIngredientLine(line);
+                if (currentSection === 'INGREDIENTS') {
+                    recipe.Ingredients.push(ingredient);
+                } else {
+                    recipe.CommonIngredients.push(ingredient);
+                }
+                break;
+            case 'ITEMS':
+                const item = parseItemLine(line);
+                recipe.Items.push(item);
+                break;
+            case 'INSTRUCTIONS':
+                recipe.Instructions.push(line.trim());
+                break;
+            case 'NOTE':
+                recipe.Note += line.trim() + '\n';
+                break;
+            default:
+                break;
+        }
+    }
+
+    return recipe;
+}
+
+function parseMetaSection(line: string, meta: Partial<RecipeVersionRaw>) {
+    const parts = line.split('::').map(part => part.trim());
+    if (parts.length === 6) {
+        meta.PortionQuantity = parseInt(parts[0]);
+        meta.PortionDescriptor = parts[1];
+        meta.ActiveTimeMinutes = parseInt(parts[2]);
+        meta.PassiveTimeMinutes = parseInt(parts[3]);
+        meta.ComplexityRating = parseInt(parts[4]);
+        meta.MayhemRating = parseInt(parts[5]);
+    }
+}
+
+function parseIngredientLine(line: string) {
+    const parts = line.split('::').map(part => part.trim());
+    return { IngredientName: parts[0], Quantity: parseFloat(parts[1]), Measurement: parts[2] };
+}
+
+function parseItemLine(line: string) {
+    const parts = line.split('::').map(part => part.trim());
+    return { ItemName: parts[0], Quantity: parseInt(parts[1]) };
 }
 
 
 async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promise<number> {
-    const { meta, ingredients, items, instructions } = parsedRecipe;
+    const { Meta, Ingredients, CommonIngredients, Items, Instructions } = parsedRecipe;
 
     // Insert Meta and get the inserted recipe version ID
-    const insertedVersionId = await DatabaseService.insertRecipeVersion(meta);
+    const insertedVersionId = await DatabaseService.insertRecipeVersion(Meta);
 
     // Insert Ingredients
-    for (const parsedIngredient of ingredients) {
+    for (const parsedIngredient of [...Ingredients, ...CommonIngredients]) {
         let ingredient: IngredientRaw;
         try {
             ingredient = await DatabaseService.getIngredientByName(parsedIngredient.IngredientName);
@@ -117,7 +142,7 @@ async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promis
     }
 
     // Insert Items
-    for (const parsedItem of items) {
+    for (const parsedItem of Items) {
         let item: RequiredItemRaw;
         try {
             item = await DatabaseService.getItemByName(parsedItem.ItemName);
@@ -138,11 +163,12 @@ async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promis
     }
 
     // Insert Instructions
-    for (const instruction of instructions) {
+    for (let i = 0; i < Instructions.length; i++) {
+        const instruction = Instructions[i];
         await DatabaseService.insertInstruction({
             RecipeVersionID: insertedVersionId,
-            StepNumber: instruction.StepNumber,
-            StepDetail: instruction.StepDetail
+            StepNumber: i + 1,
+            StepDetail: instruction
         });
     }
 
@@ -150,13 +176,14 @@ async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promis
 }
 
 function validateString(s: string): boolean {
-    const metaSectionRegex = /^\d+(\.\d+)? ;; .* ;; \d+(\.\d+)? ;; \d+(\.\d+)? ;; ([1-5]) ;; ([1-5]) ;;\s*INGREDIENTS\s*/;
-    const ingredientRegex = /.* :: \d+(\.\d+)? :: .* ;;\s*/g;
-    const itemRegex = /ITEMS\s*([^0-9]+ :: \d+(\.\d+)? ;;\s*)+/;
-    const instructionRegex = /INSTRUCTIONS\s*(\d+ :: .* ;;\s*)+/;
+    const metaSectionRegex = /^\d+(\.\d+)? :: .* :: \d+(\.\d+)? :: \d+(\.\d+)? :: ([1-5]) :: ([1-5])\s*/;
+    const ingredientRegex = /INGREDIENTS\s*.* :: \d+(\.\d+)? :: .*\s*/g;
+    const itemRegex = /ITEMS\s*([^0-9]+ :: \d+(\.\d+)?\s*)+/;
+    const instructionRegex = /INSTRUCTIONS\s*(.*\s*)+/;
 
     const portionSectionMatch = s.match(metaSectionRegex);
     if (!portionSectionMatch) {
+        console.log(s);
         throw new ParsingException('Invalid meta section format');
     }
     s = s.replace(portionSectionMatch[0], '');
