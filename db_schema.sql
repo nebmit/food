@@ -40,6 +40,19 @@ CREATE TABLE IF NOT EXISTS RecipeVersionIngredients (
     FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
 );
 
+-- RecipeCommonIngredients Table
+---- Identical to RecipeIngredients Table but represents ingredients that are not shown to the user,
+---- though referenced by the ingredient steps.
+CREATE TABLE IF NOT EXISTS RecipeVersionCommonIngredients (
+    RecipeVersionCommonIngredientID INTEGER PRIMARY KEY,
+    RecipeVersionID INTEGER NOT NULL,
+    IngredientID INTEGER NOT NULL,
+    Quantity REAL NOT NULL,
+    Measurement TEXT NOT NULL DEFAULT 'whole',
+    FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID),
+    FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
+);
+
 -- Items Table
 CREATE TABLE IF NOT EXISTS Items (
     ItemID INTEGER PRIMARY KEY,
