@@ -11,7 +11,7 @@ const WEBHOOK_SECRET: string = process.env.WEBHOOK_SECRET || "";
 const verify_signature = async (req: Request) => {
     const signature = crypto
         .createHmac("sha256", WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
+        .update(JSON.stringify(await req.json()))
         .digest("hex");
     const trusted = Buffer.from(`sha256=${signature}`, 'ascii');
     const untrusted = Buffer.from(req.headers.get("x-hub-signature-256") || '', 'ascii');
