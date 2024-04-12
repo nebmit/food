@@ -57,31 +57,31 @@ function parseRecipeText(inputText: string) {
         }
 
         switch (currentSection) {
-        case null:
-            parseMetaSection(line, recipe.Meta);
-            break;
-        case 'TAGS':
-            recipe.Tags.push(line.trim());
-            break;
-        case 'INGREDIENTS':
-        case 'COMMON INGREDIENTS':
-            if (currentSection === 'INGREDIENTS') {
-                recipe.Ingredients.push(parseIngredientLine(line));
-            } else {
-                recipe.CommonIngredients.push(parseIngredientLine(line));
-            }
-            break;
-        case 'ITEMS':
-            recipe.Items.push(parseItemLine(line));
-            break;
-        case 'INSTRUCTIONS':
-            recipe.Instructions.push(line.trim());
-            break;
-        case 'NOTE':
-            recipe.Note += line.trim() + '\n';
-            break;
-        default:
-            break;
+            case null:
+                parseMetaSection(line, recipe.Meta);
+                break;
+            case 'TAGS':
+                recipe.Tags.push(line.trim());
+                break;
+            case 'INGREDIENTS':
+            case 'COMMON INGREDIENTS':
+                if (currentSection === 'INGREDIENTS') {
+                    recipe.Ingredients.push(parseIngredientLine(line));
+                } else {
+                    recipe.CommonIngredients.push(parseIngredientLine(line));
+                }
+                break;
+            case 'ITEMS':
+                recipe.Items.push(parseItemLine(line));
+                break;
+            case 'INSTRUCTIONS':
+                recipe.Instructions.push(line.trim());
+                break;
+            case 'NOTE':
+                recipe.Note += line.trim() + '\n';
+                break;
+            default:
+                break;
         }
     }
 
@@ -174,6 +174,8 @@ async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promis
 }
 
 function validateString(s: string): boolean {
+    s = s.replaceAll(/.*#.*\n/gm, "");
+
     const metaSectionRegex = /^\d+(\.\d+)? :: .* :: \d+(\.\d+)? :: \d+(\.\d+)? :: ([1-5]) :: ([1-5])\s*/;
     const ingredientRegex = /INGREDIENTS\s*.* :: \d+(\.\d+)? :: .*\s*/g;
     const itemRegex = /ITEMS\s*([^0-9]+ :: \d+(\.\d+)?\s*)+/;
