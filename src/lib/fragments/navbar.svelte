@@ -30,13 +30,11 @@
         user = value;
     });
 
-    let ssoURL = import.meta.env.VITE_SSO_URL;
-
-    let loginURL = `${ssoURL}/login`;
-    let logoutURL = `${ssoURL}/logout`;
+    let loginURL = import.meta.env.VITE_LOGIN_URL;
+    let logoutURL = import.meta.env.VITE_LOGOUT_URL;
     onMount(() => {
-        loginURL = `${ssoURL}/login?redirect_uri=${window.location}`;
-        logoutURL = `${ssoURL}/logout?redirect_uri=${window.origin}`;
+        loginURL = `${loginURL}?redirect_uri=${window.location}`;
+        logoutURL = `${logoutURL}?redirect_uri=${window.origin}`;
     });
 </script>
 
