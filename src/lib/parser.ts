@@ -7,7 +7,7 @@ export function parseInstruction(
     return parseInstructionScaled(instruction, ingredients, 1);
 }
 
-export function parseInstructionScaled(
+function replaceSimpleIngredients(
     instruction: string,
     ingredients: RecipeIngredient[],
     scalingFactor: number
@@ -30,4 +30,29 @@ export function parseInstructionScaled(
             return match; // If no ingredient found, return the match unchanged.
         }
     );
+}
+
+function replaceFlexibleIngredients(
+    instruction: string,
+    scalingFactor: number
+): string {
+    const ingredientRegex = /\{([^}]*?(\d+)([^}]*?))\}/g;
+
+    return instruction.replace(ingredientRegex, (match, content, number) => {
+        const originalNumber = parseInt(number, 10); // Parse the number to an integer
+        const scaledNumber = Math.round(originalNumber * scalingFactor); // Scale the number by the scalingFactor
+        return content.replace(number, scaledNumber.toString()); // Replace the original number with the scaled number
+    });
+}
+
+
+export function parseInstructionScaled(
+    instruction: string,
+    ingredients: RecipeIngredient[],
+    scalingFactor: number
+): string {
+    let parsedInstruction = replaceSimpleIngredients(instruction, ingredients, scalingFactor);
+    parsedInstruction = replaceFlexibleIngredients(parsedInstruction, scalingFactor);
+
+    return parsedInstruction;
 }
