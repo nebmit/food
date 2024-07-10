@@ -38,7 +38,7 @@
 </div>
 
 <div class="container mx-auto">
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-[calc(100dvh)]">
         <div class="flex flex-col space-y-4">
             <!-- Title -->
             <h1
