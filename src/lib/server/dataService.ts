@@ -24,27 +24,36 @@ export async function update() {
     }
 }
 
-export function getRawRecipes(): Array<{ name: string, instructions: string, imagePath: string }> {
-    const array = new Array<{ name: string, instructions: string, imagePath: string }>();
+export function getRecipeFiles(): Array<{ name: string, instructionPath: string, imagePath: string }> {
+    const array = new Array<{ name: string, instructionPath: string, imagePath: string }>();
 
     const recipesPath = `${localPath}/recipes`;
 
     // Iterate over all folders within recipes
     const elements = fs.readdirSync(recipesPath);
     for (const element of elements) {
-        if (fs.lstatSync(`${recipesPath}/${element}`).isDirectory()) {
-            const instructionPath = `${recipesPath}/${element}/recipe.txt`;
-            const imagePath = `${recipesPath}/${element}/image.webp`;
+        const recipePath = path.join(recipesPath, element);
+        if (fs.lstatSync(recipePath).isDirectory()) {
+            const instructionPathTXT = path.join(recipePath, 'recipe.txt');
+            const instructionPathYAML = path.join(recipePath, 'recipe.yaml');
+            const imagePath = path.join(recipePath, 'image.webp');
 
-            if (!fs.existsSync(instructionPath) || !fs.existsSync(imagePath)) {
+            if (!fs.existsSync(imagePath)) {
                 continue;
             }
 
-            const instructions = fs.readFileSync(instructionPath, 'utf8');
+            let instructions = '';
+            if (fs.existsSync(instructionPathYAML)) {
+                instructions = instructionPathYAML;
+            } else if (fs.existsSync(instructionPathTXT)) {
+                instructions = instructionPathTXT;
+            } else {
+                continue;
+            }
 
             array.push({
                 name: element,
-                instructions: instructions,
+                instructionPath: instructions,
                 imagePath: imagePath
             });
         }

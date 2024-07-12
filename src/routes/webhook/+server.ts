@@ -1,6 +1,6 @@
 import * as dataService from "$lib/server/dataService";
 import { DatabaseService } from "$lib/server/databaseService.js";
-import { processAndInsertRecipeFromString } from "$lib/server/recipeService";
+import { insertRecipeFromFile } from "$lib/server/recipeService";
 import * as crypto from "crypto";
 import fs from "fs";
 import path from "path";
@@ -28,10 +28,14 @@ async function updateDatabase() {
     // Clear existing database recipes
     await DatabaseService.clearRecipes();
 
-    const rawRecipes = dataService.getRawRecipes();
+    const rawRecipes = dataService.getRecipeFiles();
     for (const rawRecipe of rawRecipes) {
         // Insert the recipe into the database
-        await processAndInsertRecipeFromString(rawRecipe.name, rawRecipe.instructions);
+        try {
+            await insertRecipeFromFile(rawRecipe.name, rawRecipe.instructionPath);
+        } catch (error) {
+            console.error(`Error inserting recipe ${rawRecipe.name}:`, error);
+        }
 
         // Read the image
         const image = fs.readFileSync(rawRecipe.imagePath);
