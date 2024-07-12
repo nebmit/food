@@ -22,7 +22,7 @@
 <Navbar />
 
 <div class="container mx-auto">
-    <div class="flex flex-col h-[calc(100dvh)] justify-center">
+    <div class="flex flex-col justify-center">
         <div class="flex flex-col space-y-4 w-full mt-36 mb-96">
             <h1 id="title" class="flex flex-row justify-center select-none">
                 food
