@@ -49,6 +49,7 @@ export interface RecipeVersion {
     ComplexityRating?: number;
     MayhemRating?: number;
     Ingredients: RecipeIngredient[];
+    CommonIngredients: RecipeIngredient[];
     Items: RecipeItem[];
     Instructions: Instruction[];
 }

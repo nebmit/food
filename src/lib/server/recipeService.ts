@@ -23,7 +23,6 @@ export interface ParsedRecipe {
         Quantity: number;
     }>;
     Instructions: string[];
-    Note: string;
 }
 
 async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promise<number> {

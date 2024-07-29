@@ -21,6 +21,7 @@
     const ingredients: RecipeIngredient[] = recipeVersion.Ingredients;
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
+    const note: string | undefined = recipeVersion.VersionComment;
 
     const imageUrl =
         "/images/recipes/" + encodeURIComponent(recipe.RecipeName) + ".webp";
@@ -164,6 +165,24 @@
                         {item.Quantity}
                     </div>
                 {/each}
+            </div>
+
+            <!-- Note on Desktop -->
+            <div class="hidden md:inline">
+                <h2 class="text-xl font-semibold mt-8">Comment</h2>
+                <span>
+                    {note == "" ? "🌸 (｡•́︿•̀｡) 🌸" : note}
+                </span>
+            </div>
+
+            <!-- Note on Mobile -->
+            <div class="md:hidden">
+                {#if note != ""}
+                    <h2 class="text-xl font-semibold mt-8">Comment</h2>
+                    <span>
+                        {note}
+                    </span>
+                {/if}
             </div>
         </div>
 

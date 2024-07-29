@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import type { CartIngredient, Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
 import { ItemNotFoundException } from '../types';
-import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RecipeVersionRaw, RequiredItemRaw } from './databaseTypes';
+import type { IngredientRaw, InstructionRaw, RecipeRaw, RecipeVersionCommonIngredientRaw, RecipeVersionIngredientRaw, RecipeVersionItemRaw, RecipeVersionRaw, RequiredItemRaw } from './databaseTypes';
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -82,7 +82,7 @@ export class DatabaseService {
 
         const rawIngredients: RecipeVersionIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionIngredients WHERE RecipeVersionID = ?`, versionId);
         const ingredients: RecipeIngredient[] = await Promise.all(rawIngredients.map(DatabaseService.getRecipeIngredient));
-        const rawCommonIngredients: RecipeVersionIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionCommonIngredients WHERE RecipeVersionID = ?`, versionId);
+        const rawCommonIngredients: RecipeVersionCommonIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionCommonIngredients WHERE RecipeVersionID = ?`, versionId);
         const commonIngredients: RecipeIngredient[] = await Promise.all(rawCommonIngredients.map(DatabaseService.getRecipeIngredient));
         const rawItems: RecipeVersionItemRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionItems WHERE RecipeVersionID = ?`, versionId);
         const items: RecipeItem[] = await Promise.all(rawItems.map(DatabaseService.getRequiredItem));
@@ -375,7 +375,7 @@ export class DatabaseService {
 
 
     // Private methods
-    private static async getRecipeIngredient(recipeIngredient: RecipeVersionIngredientRaw): Promise<RecipeIngredient> {
+    private static async getRecipeIngredient(recipeIngredient: RecipeVersionIngredientRaw | RecipeVersionCommonIngredientRaw): Promise<RecipeIngredient> {
         try {
             const ingredient = await DatabaseService.getIngredientById(recipeIngredient.IngredientID);
             if (!ingredient) throw new Error('Item not found');

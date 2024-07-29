@@ -31,6 +31,14 @@ export interface RecipeVersionIngredientRaw {
     Measurement: string; // Optional because it can be NULL
 }
 
+export interface RecipeVersionCommonIngredientRaw {
+    RecipeVersionCommonIngredientID: number;
+    RecipeVersionID: number;
+    IngredientID: number;
+    Quantity: number;
+    Measurement: string; // Optional because it can be NULL
+}
+
 export interface RequiredItemRaw {
     ItemID: number;
     ItemName: string;

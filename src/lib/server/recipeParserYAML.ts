@@ -96,7 +96,8 @@ export function parseRecipeYAML(recipeData: string): ParsedRecipe {
             ActiveTimeMinutes: parsedYaml.portion.active_time_minutes,
             PassiveTimeMinutes: parsedYaml.portion.passive_time_minutes,
             ComplexityRating: parsedYaml.portion.complexity_rating,
-            MayhemRating: parsedYaml.portion.mayhem_rating
+            MayhemRating: parsedYaml.portion.mayhem_rating,
+            VersionComment: parsedYaml.note ? parsedYaml.note.join('\n') : '',
         },
         Tags: parsedYaml.tags || [],
         Ingredients: parsedYaml.ingredients.map(ingredient => ({
@@ -114,7 +115,6 @@ export function parseRecipeYAML(recipeData: string): ParsedRecipe {
             Quantity: item.quantity,
         })),
         Instructions: parsedYaml.instructions,
-        Note: parsedYaml.note ? parsedYaml.note.join('\n') : '',
     };
 
     return parsedRecipe;
