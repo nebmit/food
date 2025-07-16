@@ -119,7 +119,7 @@
         </div>
 
         <!-- Add to Cart Button -->
-        {#if !user.isAuthenticated}
+        {#if user.isAuthenticated}
             <div
                 class="absolute top-3 right-0 w-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pointer-events-none"
             >
