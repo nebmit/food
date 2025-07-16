@@ -1,6 +1,4 @@
 <script lang="ts">
-    import Logo from "$lib/components/logo.svelte";
-    import Navbar from "$lib/fragments/navbar.svelte";
     import RecipeCard from "$lib/fragments/recipeCard.svelte";
     import Searchbar from "$lib/fragments/searchbar.svelte";
     import type { Recipe } from "$lib/types";

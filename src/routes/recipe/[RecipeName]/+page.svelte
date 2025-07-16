@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { stars } from "$lib/actions";
     import { setToCart } from "$lib/cart";
     import { parseInstructionScaled } from "$lib/parser";
     import { pageTitle } from "$lib/stores";
@@ -82,7 +81,7 @@
                                 <div class="flex items-center gap-1">
                                     <span>complexity</span>
                                     <div class="flex gap-0.5">
-                                        {#each Array(5) as _, i}
+                                        {#each Array(5).keys() as i}
                                             <div
                                                 class="w-1.5 h-1.5 rounded-full {i <
                                                 recipeVersion.ComplexityRating
@@ -101,7 +100,7 @@
                                 <div class="flex items-center gap-1">
                                     <span>mayhem</span>
                                     <div class="flex gap-0.5">
-                                        {#each Array(5) as _, i}
+                                        {#each Array(5).keys() as i}
                                             <div
                                                 class="w-1.5 h-1.5 rounded-full {i <
                                                 recipeVersion.MayhemRating

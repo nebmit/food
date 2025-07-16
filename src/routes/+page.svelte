@@ -1,6 +1,5 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import Logo from "$lib/components/logo.svelte";
     import RecipeCard from "$lib/fragments/recipeCard.svelte";
     import Searchbar from "$lib/fragments/searchbar.svelte";
     import type { Recipe } from "$lib/types";
