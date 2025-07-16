@@ -12,6 +12,14 @@
     --text-color: #18181b
 }
 
+html,
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
 body {
     color: var(--text-color);
+    min-height: 100vh;
 }

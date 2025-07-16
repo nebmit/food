@@ -2,6 +2,7 @@
     import { getContext, onMount } from "svelte";
     import type { Writable } from "svelte/store";
     import type { User } from "../../app";
+    import Logo from "$lib/components/logo.svelte";
 
     let show = false;
     function toggleMenu() {
@@ -10,15 +11,15 @@
 
     const buttons = [
         {
-            name: "Home",
+            name: "Browse",
             link: "/",
         },
         {
-            name: "Explore",
-            link: "/explore",
+            name: "Search",
+            link: "/search",
         },
         {
-            name: "List",
+            name: "Pantry",
             link: "/cart",
         },
     ];
@@ -38,123 +39,177 @@
     });
 </script>
 
-<div style="z-index: 1;">
+<!-- Modern Minimalistic Navbar -->
+<nav
+    class="bg-white border-b border-black/5 fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+>
     <!-- Desktop Navbar -->
-    <div class="hidden sm:flex items-center h-16">
-        <!-- Left Element -->
-        <div class="flex-shrink-0 w-1/4 pl-4"></div>
+    <div
+        class="hidden md:flex items-center justify-between h-16 px-8 max-w-6xl mx-auto"
+    >
+        <!-- Logo/Brand Area -->
+        <div class="flex-1">
+            <a href="/" class="inline-flex items-center">
+                <Logo />
+            </a>
+        </div>
 
-        <!-- Centered Elements -->
-        <div class="flex-grow flex justify-center">
+        <!-- Navigation Links -->
+        <div class="flex flex-1 justify-center items-center max-w-96 mx-auto">
             {#each buttons as button}
                 <a
                     href={button.link}
-                    class="mx-4 text-lg transition-all duration-300 ease-in-out hover:text-gray-700 custom-underline"
+                    class="flex-1 text-center text-gray-600 hover:text-gray-800 text-sm font-medium tracking-wide uppercase py-2 relative transition-all duration-300 group"
                 >
                     {button.name}
+                    <span
+                        class="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gray-800 transition-all duration-300 -translate-x-1/2 group-hover:w-[calc(100%-1rem)]"
+                    ></span>
                 </a>
             {/each}
         </div>
 
-        <!-- Right Element -->
-        <div class="flex-shrink-0 w-1/4 pr-4 text-right">
+        <!-- User Actions -->
+        <div class="flex-1 flex justify-end">
             {#if user.isAuthenticated}
                 <a
                     href={logoutURL}
-                    class="hover:text-gray-700"
+                    class="flex items-center gap-2 px-6 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium tracking-wide uppercase transition-all duration-300 hover:bg-gray-50/80 rounded-md"
                     aria-label="Logout"
                 >
-                    Logout
+                    <svg
+                        class="w-4 h-4 stroke-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                    </svg>
+                    <span class="hidden lg:inline">Logout</span>
                 </a>
             {:else}
                 <a
                     href={loginURL}
-                    class="hover:text-gray-700"
+                    class="flex items-center gap-2 px-6 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium tracking-wide uppercase transition-all duration-300 hover:bg-gray-50/80 rounded-md"
                     aria-label="Login"
                 >
-                    Login
+                    <svg
+                        class="w-4 h-4 stroke-2"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 713 3v1"
+                        />
+                    </svg>
+                    <span class="hidden lg:inline">Login</span>
                 </a>
             {/if}
         </div>
     </div>
 
     <!-- Mobile Navbar -->
-    <div class="sm:hidden flex justify-end items-center h-16">
-        {#if user.isAuthenticated}
-            <a href={logoutURL} class="hover:text-gray-700" aria-label="Logout">
-                Logout
+    <div class="md:hidden flex items-center justify-between h-16 px-4">
+        <!-- Logo/Brand -->
+        <div class="flex-1">
+            <a href="/" class="inline-flex items-center">
+                <Logo />
             </a>
-        {:else}
-            <a href={loginURL} class="hover:text-gray-700" aria-label="Login">
-                Login
-            </a>
-        {/if}
-        <button class="mx-2" on:click={toggleMenu}>
-            <svg
-                class="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16m-7 6h7"
-                />
-            </svg>
-        </button>
-    </div>
-    <div
-        class="sm:hidden flex flex-col items-center {show
-            ? 'expand-transition'
-            : 'collapse-transition'}"
-    >
-        {#each buttons as button}
-            <a
-                href={button.link}
-                class="mx-4 transition-all duration-300 my-2 ease-in-out hover:text-gray-700 custom-underline"
-            >
-                {button.name}
-            </a>
-        {/each}
-    </div>
-</div>
+        </div>
 
-<style>
-    /* Custom CSS for smooth expand/collapse */
-    .collapse-transition {
-        transition:
-            max-height 0.5s ease-in-out,
-            opacity 0.5s ease-in-out;
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-    }
-    .expand-transition {
-        transition:
-            max-height 0.5s ease-in-out,
-            opacity 0.5s ease-in-out;
-        max-height: 12rem; /* approx size of three buttons */
-        opacity: 1;
-    }
+        <!-- Mobile Actions -->
+        <div class="flex items-center gap-4">
+            <button
+                class="p-2 hover:bg-gray-100/50 rounded-md transition-all duration-300"
+                on:click={toggleMenu}
+                aria-label="Toggle menu"
+            >
+                <div class="w-6 h-5 relative">
+                    <span
+                        class="absolute h-0.5 w-full bg-gray-600 rounded-full transform transition-all duration-300 {show
+                            ? 'top-2 rotate-45'
+                            : 'top-0'}"
+                    ></span>
+                    <span
+                        class="absolute top-2 h-0.5 w-full bg-gray-600 rounded-full transition-all duration-300 {show
+                            ? 'opacity-0'
+                            : 'opacity-100'}"
+                    ></span>
+                    <span
+                        class="absolute h-0.5 w-full bg-gray-600 rounded-full transform transition-all duration-300 {show
+                            ? 'top-2 -rotate-45'
+                            : 'top-4'}"
+                    ></span>
+                </div>
+            </button>
+        </div>
+    </div>
 
-    .custom-underline {
-        position: relative;
-        overflow: hidden;
-    }
-    .custom-underline:after {
-        content: "";
-        position: absolute;
-        width: 0%;
-        height: 1px;
-        background: currentColor;
-        bottom: 0;
-        left: 50%;
-        transition: all 0.5s ease-in-out;
-    }
-    .custom-underline:hover:after {
-        width: 100%;
-        left: 0;
-    }
-</style>
+    <!-- Simple Mobile Menu -->
+    {#if show}
+        <div
+            class="md:hidden absolute top-full left-0 right-0 bg-white border-b border-black/5 shadow-lg z-40"
+        >
+            <div class="p-4 space-y-2">
+                {#each buttons as button}
+                    <a
+                        href={button.link}
+                        class="block text-gray-600 hover:text-gray-900 font-medium text-base py-3 px-4 rounded-lg transition-all duration-200 hover:bg-gray-50/80 text-center"
+                        on:click={toggleMenu}
+                    >
+                        {button.name}
+                    </a>
+                {/each}
+                <div class="h-px bg-black/5 my-3"></div>
+                {#if user.isAuthenticated}
+                    <a
+                        href={logoutURL}
+                        class="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-base py-3 px-4 rounded-lg transition-all duration-200 hover:bg-gray-50/80"
+                        on:click={toggleMenu}
+                    >
+                        <svg
+                            class="w-4 h-4 stroke-2"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 713-3h4a3 3 0 713 3v1"
+                            />
+                        </svg>
+                        <span>Logout</span>
+                    </a>
+                {:else}
+                    <a
+                        href={loginURL}
+                        class="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-base py-3 px-4 rounded-lg transition-all duration-200 hover:bg-gray-50/80"
+                        on:click={toggleMenu}
+                    >
+                        <svg
+                            class="w-4 h-4 stroke-2"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 713 3v1"
+                            />
+                        </svg>
+                        <span>Login</span>
+                    </a>
+                {/if}
+            </div>
+        </div>
+    {/if}
+</nav>

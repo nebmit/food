@@ -2,64 +2,42 @@
     import { page } from "$app/stores";
 </script>
 
-<div class="error-container">
-    <div class="content">
-        <h1 class="error-code">{$page.status}</h1>
-        <p class="error-message">
+<div class="bg-white flex-1 flex items-center justify-center px-6">
+    <div class="text-center max-w-md mx-auto">
+        <!-- Error Code -->
+        <h1 class="text-6xl md:text-8xl font-bold text-gray-800 mb-4">
+            {$page.status}
+        </h1>
+
+        <!-- Error Message -->
+        <p class="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
             {#if $page.error && $page.error.message}
                 {$page.error.message}
+            {:else if $page.status === 404}
+                page not found
+            {:else if $page.status === 500}
+                something went wrong
             {:else}
-                An error occurred.
+                an error occurred
             {/if}
         </p>
 
-        {#if $page.status === 401}
-            <a href="/login">Login</a>
-            <a href="/">Go Home</a>
-        {:else}
-            <a href="/">Go Home</a>
-        {/if}
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            {#if $page.status === 401}
+                <a
+                    href="/login"
+                    class="px-6 py-2.5 bg-gray-800 text-white font-medium rounded hover:bg-gray-700 transition-colors duration-200"
+                >
+                    login
+                </a>
+            {/if}
+            <a
+                href="/"
+                class="px-6 py-2.5 bg-gray-100 text-gray-800 font-medium rounded hover:bg-gray-200 transition-colors duration-200"
+            >
+                go home
+            </a>
+        </div>
     </div>
 </div>
-
-<style>
-    .error-container {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        font-family: "Arial", sans-serif;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .content {
-        z-index: 1;
-        position: relative;
-        text-align: center;
-    }
-
-    .error-code {
-        font-size: 3em;
-        font-weight: bold;
-    }
-
-    .error-message {
-        font-size: 1.5em;
-        margin-bottom: 2em;
-    }
-
-    a {
-        text-decoration: none;
-        margin: 1em;
-        padding: 0.5em;
-        border: 1px solid var(--text-color);
-        transition: background-color 0.3s, color 0.3s;
-    }
-
-    a:hover {
-        background-color: var(--text-color);
-        color: var(--bg-color);
-    }
-</style>

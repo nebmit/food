@@ -11,45 +11,86 @@
     $: mayhem = recipeVersion.MayhemRating ?? 0;
 </script>
 
-<a href={"/recipe/" + encodedRecipeName}>
-    <div
-        class="w-64 bg-white rounded-lg shadow-md cursor-pointer select-none hover:shadow-xl hover:scale-105 transition ease-in-out duration-200 transform"
+<a href={"/recipe/" + encodedRecipeName} class="block group">
+    <article
+        class="w-72 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer select-none hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out overflow-hidden"
     >
-        <div class="relative h-40">
+        <div class="relative h-48 overflow-hidden">
             <img
-                class="absolute top-0 left-0 w-full h-full rounded-t-lg object-cover object-center"
+                class="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500 ease-out"
                 src={imageUrl}
                 alt={recipe.RecipeName}
+                loading="lazy"
             />
             <div
-                class="absolute bottom-0 right-0 p-2 rounded-tl-lg bg-slate-700 bg-opacity-80 text-white text-xs font-bold"
+                class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            ></div>
+            <div
+                class="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-sm text-gray-800 text-sm font-medium shadow-sm"
             >
-                ~ {recipeVersion.ActiveTimeMinutes +
+                {recipeVersion.ActiveTimeMinutes +
                     recipeVersion.PassiveTimeMinutes} min
             </div>
         </div>
-        <div class="p-4">
-            <p
-                class="text-lg font-semibold h-12 overflow-hidden line-clamp-2 overflow-ellipsis leading-tight"
+
+        <div class="p-5 space-y-4">
+            <h3
+                class="text-xl font-bold text-gray-900 h-14 overflow-hidden line-clamp-2 leading-tight group-hover:text-gray-700 transition-colors duration-200"
             >
                 {recipe.RecipeName}
-            </p>
-            <div class="flex flex-row space-x-2">
-                <div class="text-cyan-500">
-                    Complexity
-                    <span
-                        class="font-bold"
-                        use:stars={{ total: 5, filled: complexity }}
-                    />
+            </h3>
+
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex flex-col items-center">
+                        <span
+                            class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1"
+                        >
+                            Complexity
+                        </span>
+                        <div class="flex items-center">
+                            <span
+                                class="text-emerald-600 font-semibold"
+                                use:stars={{ total: 5, filled: complexity }}
+                            ></span>
+                        </div>
+                    </div>
+
+                    <div class="w-px h-8 bg-gray-200"></div>
+
+                    <div class="flex flex-col items-center">
+                        <span
+                            class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1"
+                        >
+                            Mayhem
+                        </span>
+                        <div class="flex items-center">
+                            <span
+                                class="text-orange-500 font-semibold"
+                                use:stars={{ total: 5, filled: mayhem }}
+                            ></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-purple-500">
-                    Mayhem
-                    <span
-                        class="font-bold"
-                        use:stars={{ total: 5, filled: mayhem }}
-                    />
+
+                <div
+                    class="text-gray-400 group-hover:text-gray-600 transition-colors duration-200"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                        ></path>
+                    </svg>
                 </div>
             </div>
         </div>
-    </div>
+    </article>
 </a>
