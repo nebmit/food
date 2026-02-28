@@ -1,5 +1,7 @@
 import type { RecipeIngredient } from "./types";
 
+const MEASUREMENT_PATTERN = /(\d+(?:\.\d+)?)\s*(grams?|g|ml|teaspoons?|tsp|tablespoons?|tbsp|cloves?|pinch(?:es)?|cans?|bunch(?:es)?|slices?|units?)\b/gi;
+
 export function parseInstruction(
     instruction: string,
     ingredients: RecipeIngredient[]
@@ -7,52 +9,34 @@ export function parseInstruction(
     return parseInstructionScaled(instruction, ingredients, 1);
 }
 
-function replaceSimpleIngredients(
-    instruction: string,
-    ingredients: RecipeIngredient[],
-    scalingFactor: number
-): string {
+/**
+ * Highlights ingredient names wrapped in [brackets].
+ */
+function highlightIngredients(instruction: string): string {
     return instruction.replace(
-        /\{(?:(\d+(\.\d+)?):)?([\w\s-]+)\}/g,
-        (match, percentage, _, ingredientName) => {
-            const ingredient = ingredients.find(
-                (ing) => ing.Ingredient.IngredientName.toLowerCase() === ingredientName.toLowerCase()
-            );
-            if (ingredient) {
-                if (percentage) {
-                    const adjustedQuantity = ingredient.Quantity * scalingFactor;
-                    const calculatedQuantity = adjustedQuantity * parseFloat(percentage);
-                    const calculatedQuantityRounded = Math.round(calculatedQuantity * 100) / 100;
-                    return `${calculatedQuantityRounded} ${ingredient.Measurement || ""} ${ingredientName}`; // If percentage, also return quantity and measurement.
-                }
-                return ingredientName; // If no percentage, just return the ingredient name.
-            }
-            return match; // If no ingredient found, return the match unchanged.
-        }
+        /\[([^\]]+)\]/g,
+        '<span class="font-semibold text-blue-800">$1</span>'
     );
 }
 
-function replaceFlexibleIngredients(
-    instruction: string,
-    scalingFactor: number
-): string {
-    const ingredientRegex = /\{([^}]*?(\d+)([^}]*?))\}/g;
+/**
+ * Scales numbers that appear directly before a measurement word.
+ */
+function scaleQuantities(instruction: string, scalingFactor: number): string {
+    if (scalingFactor === 1) return instruction;
 
-    return instruction.replace(ingredientRegex, (match, content, number) => {
-        const originalNumber = parseInt(number, 10); // Parse the number to an integer
-        const scaledNumber = Math.round(originalNumber * scalingFactor); // Scale the number by the scalingFactor
-        return content.replace(number, scaledNumber.toString()); // Replace the original number with the scaled number
+    return instruction.replace(MEASUREMENT_PATTERN, (_match, num, unit) => {
+        const scaled = Math.round(parseFloat(num) * scalingFactor * 100) / 100;
+        return `${scaled} ${unit}`;
     });
 }
-
 
 export function parseInstructionScaled(
     instruction: string,
     ingredients: RecipeIngredient[],
     scalingFactor: number
 ): string {
-    let parsedInstruction = replaceSimpleIngredients(instruction, ingredients, scalingFactor);
-    parsedInstruction = replaceFlexibleIngredients(parsedInstruction, scalingFactor);
-
-    return parsedInstruction;
+    let result = scaleQuantities(instruction, scalingFactor);
+    result = highlightIngredients(result);
+    return result;
 }

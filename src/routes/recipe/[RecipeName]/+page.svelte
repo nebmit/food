@@ -17,9 +17,14 @@
     const recipeVersion = recipe.MainVersion;
 
     const ingredients: RecipeIngredient[] = recipeVersion.Ingredients;
+    const pantryIngredients: RecipeIngredient[] =
+        recipeVersion.PantryIngredients;
     const instructions: Instruction[] = recipeVersion.Instructions;
     const items: RecipeItem[] = recipeVersion.Items;
-    const note: string | undefined = recipeVersion.VersionComment;
+    const notes: string[] = recipeVersion.Notes;
+    const description: string = recipeVersion.Description;
+    const source: string = recipeVersion.Source;
+    const cuisine: string = recipeVersion.Cuisine;
 
     const imageUrl =
         "/images/recipes/" + encodeURIComponent(recipe.RecipeName) + ".webp";
@@ -37,6 +42,11 @@
     let selectedPortion = recipeVersion.PortionQuantity;
     $: selectedPortion = Math.max(Math.min(selectedPortion, 99), 1);
     $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
+
+    function formatQuantity(quantity: number, factor: number): string {
+        const scaled = quantity * factor;
+        return scaled % 1 === 0 ? scaled.toFixed(0) : scaled.toFixed(1);
+    }
 </script>
 
 <div class="bg-white flex-1">
@@ -58,6 +68,19 @@
                 >
                     {recipe.RecipeName}
                 </h1>
+
+                {#if cuisine || source}
+                    <p
+                        class="text-white/80 text-sm mb-1"
+                        style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);"
+                    >
+                        {#if cuisine}{cuisine}{/if}
+                        {#if cuisine && source}
+                            ·
+                        {/if}
+                        {#if source}{source}{/if}
+                    </p>
+                {/if}
 
                 <!-- Quick Info Bar -->
                 <div
@@ -157,6 +180,12 @@
             </div>
         </div>
 
+        {#if description}
+            <p class="text-gray-600 text-sm leading-relaxed mb-6">
+                {description}
+            </p>
+        {/if}
+
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <!-- Instructions (shown first on mobile) -->
@@ -174,7 +203,7 @@
                             </div>
                             <div class="flex-1 pt-0.5">
                                 <p class="text-gray-700 leading-relaxed">
-                                    {parseInstructionScaled(
+                                    {@html parseInstructionScaled(
                                         instruction.StepDetail,
                                         ingredients,
                                         scalingFactor,
@@ -198,20 +227,32 @@
                     <div class="space-y-1.5">
                         {#each ingredients as ingredient}
                             <div
-                                class="flex justify-between items-center py-2 px-3 bg-white border border-gray-200 rounded-lg"
+                                class="flex justify-between items-start py-2 px-3 bg-white border border-gray-200 rounded-lg"
                             >
-                                <span class="text-sm font-medium text-gray-800">
-                                    {ingredient.Ingredient.IngredientName}
-                                </span>
-                                <span class="text-xs text-gray-600 font-medium">
-                                    {(
-                                        ingredient.Quantity * scalingFactor
-                                    ).toFixed(
-                                        (ingredient.Quantity * scalingFactor) %
-                                            1 ===
-                                            0
-                                            ? 0
-                                            : 1,
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-sm font-medium text-gray-800"
+                                    >
+                                        {ingredient.Ingredient.IngredientName}
+                                    </span>
+                                    {#if ingredient.Prep}
+                                        <span class="text-xs text-gray-500"
+                                            >{ingredient.Prep}</span
+                                        >
+                                    {/if}
+                                    {#if ingredient.Sub}
+                                        <span
+                                            class="text-xs text-gray-400 italic"
+                                            >{ingredient.Sub}</span
+                                        >
+                                    {/if}
+                                </div>
+                                <span
+                                    class="text-xs text-gray-600 font-medium whitespace-nowrap ml-2"
+                                >
+                                    {formatQuantity(
+                                        ingredient.Quantity,
+                                        scalingFactor,
                                     )}
                                     {ingredient.Measurement || ""}
                                 </span>
@@ -219,6 +260,26 @@
                         {/each}
                     </div>
                 </div>
+
+                <!-- Pantry Staples -->
+                {#if pantryIngredients.length > 0}
+                    <div>
+                        <h2
+                            class="text-lg font-bold text-gray-800 tracking-tight mb-3"
+                        >
+                            pantry staples
+                        </h2>
+                        <div class="flex flex-wrap gap-1.5">
+                            {#each pantryIngredients as pantry}
+                                <span
+                                    class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded"
+                                >
+                                    {pantry.Ingredient.IngredientName}
+                                </span>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
 
                 <!-- Items -->
                 {#if items.length > 0}
@@ -248,19 +309,25 @@
                 {/if}
 
                 <!-- Notes -->
-                {#if note && note.trim() !== ""}
+                {#if notes.length > 0}
                     <div>
                         <h2
                             class="text-lg font-bold text-gray-800 tracking-tight mb-3"
                         >
                             notes
                         </h2>
-                        <div
-                            class="p-3 bg-blue-50 border border-blue-200 rounded-lg"
-                        >
-                            <p class="text-gray-700 text-sm leading-relaxed">
-                                {note}
-                            </p>
+                        <div class="space-y-2">
+                            {#each notes as noteText}
+                                <div
+                                    class="p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                                >
+                                    <p
+                                        class="text-gray-700 text-sm leading-relaxed"
+                                    >
+                                        {noteText}
+                                    </p>
+                                </div>
+                            {/each}
                         </div>
                     </div>
                 {/if}

@@ -24,6 +24,8 @@ export interface RecipeIngredient {
     Ingredient: Ingredient;
     Quantity: number;
     Measurement: string;
+    Prep?: string;
+    Sub?: string;
 }
 
 export interface Item {
@@ -42,6 +44,9 @@ export interface RecipeVersion {
     RecipeVersionID: number;
     ParentVersionID?: number;
     VersionComment?: string;
+    Description: string;
+    Source: string;
+    Cuisine: string;
     PortionQuantity: number;
     PortionDescriptor: string;
     ActiveTimeMinutes: number;
@@ -49,9 +54,10 @@ export interface RecipeVersion {
     ComplexityRating?: number;
     MayhemRating?: number;
     Ingredients: RecipeIngredient[];
-    CommonIngredients: RecipeIngredient[];
+    PantryIngredients: RecipeIngredient[];
     Items: RecipeItem[];
     Instructions: Instruction[];
+    Notes: string[];
 }
 
 export interface Recipe {

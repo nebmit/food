@@ -2,7 +2,6 @@ import fs from "fs";
 import { ItemNotFoundException, ParsingException } from "../types";
 import { DatabaseService } from "./databaseService";
 import type { IngredientRaw, RecipeVersionRaw, RequiredItemRaw } from "./databaseTypes";
-import { parseRecipeTXT } from './recipeParserTXT';
 import { parseRecipeYAML } from "./recipeParserYAML";
 
 export interface ParsedRecipe {
@@ -12,48 +11,47 @@ export interface ParsedRecipe {
         IngredientName: string;
         Quantity: number;
         Measurement: string;
+        Prep?: string;
+        Sub?: string;
     }>;
-    CommonIngredients: Array<{
+    PantryIngredients: Array<{
         IngredientName: string;
-        Quantity: number;
-        Measurement: string;
     }>;
     Items: Array<{
         ItemName: string;
         Quantity: number;
     }>;
     Instructions: string[];
+    Notes: string[];
 }
 
 async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promise<number> {
-    const { Meta, Ingredients, CommonIngredients, Items, Instructions } = parsedRecipe;
+    const { Meta, Ingredients, PantryIngredients, Items, Instructions, Notes } = parsedRecipe;
 
-    // Insert Meta and get the inserted recipe version ID
     const insertedVersionId = await DatabaseService.insertRecipeVersion(Meta);
 
-    // Insert Ingredients
-    for (const parsedIngredient of [...Ingredients, ...CommonIngredients]) {
-        let ingredient: IngredientRaw;
-        try {
-            ingredient = await DatabaseService.getIngredientByName(parsedIngredient.IngredientName);
-        } catch (e: unknown) {
-            if (e instanceof ItemNotFoundException) {
-                const ingredientId = await DatabaseService.insertIngredient({ IngredientName: parsedIngredient.IngredientName });
-                ingredient = await DatabaseService.getIngredientById(ingredientId);
-            } else {
-                throw e;
-            }
-        }
+    for (const parsedIngredient of Ingredients) {
+        const ingredient = await getOrCreateIngredient(parsedIngredient.IngredientName);
 
         await DatabaseService.insertRecipeVersionIngredient({
             IngredientID: ingredient.IngredientID,
             RecipeVersionID: insertedVersionId,
             Quantity: parsedIngredient.Quantity,
-            Measurement: parsedIngredient.Measurement
+            Measurement: parsedIngredient.Measurement,
+            Prep: parsedIngredient.Prep || undefined,
+            Sub: parsedIngredient.Sub || undefined,
         });
     }
 
-    // Insert Items
+    for (const pantryItem of PantryIngredients) {
+        const ingredient = await getOrCreateIngredient(pantryItem.IngredientName);
+
+        await DatabaseService.insertRecipeVersionPantryIngredient({
+            IngredientID: ingredient.IngredientID,
+            RecipeVersionID: insertedVersionId,
+        });
+    }
+
     for (const parsedItem of Items) {
         let item: RequiredItemRaw;
         try {
@@ -74,34 +72,45 @@ async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promis
         });
     }
 
-    // Insert Instructions
     for (let i = 0; i < Instructions.length; i++) {
-        const instruction = Instructions[i];
         await DatabaseService.insertInstruction({
             RecipeVersionID: insertedVersionId,
             StepNumber: i + 1,
-            StepDetail: instruction
+            StepDetail: Instructions[i]
+        });
+    }
+
+    for (let i = 0; i < Notes.length; i++) {
+        await DatabaseService.insertNote({
+            RecipeVersionID: insertedVersionId,
+            NoteNumber: i + 1,
+            NoteText: Notes[i],
         });
     }
 
     return insertedVersionId;
 }
 
+async function getOrCreateIngredient(name: string): Promise<IngredientRaw> {
+    try {
+        return await DatabaseService.getIngredientByName(name);
+    } catch (e: unknown) {
+        if (e instanceof ItemNotFoundException) {
+            const id = await DatabaseService.insertIngredient({ IngredientName: name });
+            return await DatabaseService.getIngredientById(id);
+        }
+        throw e;
+    }
+}
+
 export async function insertRecipeFromFile(recipeName: string, recipePath: string): Promise<number> {
-    let parsedRecipe: ParsedRecipe;
     const recipeData = fs.readFileSync(recipePath, 'utf8');
 
-    switch (recipePath.split('.').pop()) {
-    case 'txt':
-        parsedRecipe = parseRecipeTXT(recipeData);
-        break;
-    case 'yaml':
-        parsedRecipe = parseRecipeYAML(recipeData);
-        break;
-    default:
-        throw new ParsingException('Invalid file format');
+    if (!recipePath.endsWith('.yaml')) {
+        throw new ParsingException('Only YAML recipe files are supported');
     }
 
+    const parsedRecipe = parseRecipeYAML(recipeData);
     const versionId = await insertRecipeVersionFromString(parsedRecipe);
     return await DatabaseService.insertRecipe({ RecipeName: recipeName, MainVersionID: versionId });
 }

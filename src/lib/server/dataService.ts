@@ -37,26 +37,16 @@ function getRecipeFiles(): Array<{ name: string, instructionPath: string, imageP
     for (const element of elements) {
         const recipePath = path.join(recipesPath, element);
         if (fs.lstatSync(recipePath).isDirectory()) {
-            const instructionPathTXT = path.join(recipePath, 'recipe.txt');
-            const instructionPathYAML = path.join(recipePath, 'recipe.yaml');
+            const instructionPath = path.join(recipePath, 'recipe.yaml');
             const imagePath = path.join(recipePath, 'image.webp');
 
-            if (!fs.existsSync(imagePath)) {
-                continue;
-            }
-
-            let instructions = '';
-            if (fs.existsSync(instructionPathYAML)) {
-                instructions = instructionPathYAML;
-            } else if (fs.existsSync(instructionPathTXT)) {
-                instructions = instructionPathTXT;
-            } else {
+            if (!fs.existsSync(imagePath) || !fs.existsSync(instructionPath)) {
                 continue;
             }
 
             array.push({
                 name: element,
-                instructionPath: instructions,
+                instructionPath: instructionPath,
                 imagePath: imagePath
             });
         }

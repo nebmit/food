@@ -34,6 +34,8 @@
 	"type": "module",
 	"dependencies": {
 		"argon2": "^0.31.2",
+		"baseline-browser-mapping": "^2.10.0",
+		"caniuse-lite": "^1.0.30001774",
 		"dotenv": "^16.4.7",
 		"mysql": "^2.18.1",
 		"package-up": "^5.0.0",
