@@ -18,7 +18,7 @@
         <input
             type="text"
             class="w-full h-12 px-6 text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors duration-200 placeholder-gray-400"
-            placeholder="Search recipes..."
+            placeholder="search recipes..."
             on:keydown={handleKeydown}
             bind:value={searchQuery}
         />
@@ -63,6 +63,6 @@
         class="h-12 px-8 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors duration-200 whitespace-nowrap"
         on:click={onSubmit}
     >
-        Search
+        search
     </button>
 </div>

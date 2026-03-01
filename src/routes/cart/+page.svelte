@@ -1,6 +1,13 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
-    import { getCart, getCartIngredients, setToCart } from "$lib/cart";
+    import {
+        addMergeRule,
+        getCart,
+        getCartIngredients,
+        getMergeRules,
+        removeMergeRule,
+        setToCart,
+    } from "$lib/cart";
     import type { CartIngredient, Recipe } from "$lib/types";
     import { onMount } from "svelte";
     import { QRCodeImage } from "svelte-qrcode-image";
@@ -10,8 +17,13 @@
     let cartItems: { recipe: Recipe; quantity: number }[] = [];
     let cartIngredients: CartIngredient[] = [];
 
+    /** The ingredient the user picked as the merge source. */
+    let mergeSource: CartIngredient | null = null;
+    let mergeRules: Record<string, string> = {};
+
     onMount(async () => {
         loadCart();
+        mergeRules = getMergeRules();
     });
 
     let timeout: number | null = null;
@@ -63,6 +75,31 @@
         setToCart(recipe, quantity);
         loadCart();
     }
+
+    function startMerge(ingredient: CartIngredient) {
+        mergeSource = ingredient;
+    }
+
+    function cancelMerge() {
+        mergeSource = null;
+    }
+
+    function completeMerge(target: CartIngredient) {
+        if (!mergeSource) return;
+        addMergeRule(
+            mergeSource.ingredient.IngredientName,
+            target.ingredient.IngredientName,
+        );
+        mergeSource = null;
+        mergeRules = getMergeRules();
+        loadCart();
+    }
+
+    function undoMerge(source: string) {
+        removeMergeRule(source);
+        mergeRules = getMergeRules();
+        loadCart();
+    }
 </script>
 
 <div class="bg-white flex-1">
@@ -70,7 +107,7 @@
         <!-- Page Header -->
         <div class="mb-12">
             <h1 class="text-3xl font-bold text-gray-800 tracking-tight mb-2">
-                pantry
+                grocery list
             </h1>
             <p class="text-gray-600">your saved recipes and shopping list</p>
         </div>
@@ -89,7 +126,7 @@
                     </svg>
                 </div>
                 <h2 class="text-xl font-medium text-gray-800 mb-2">
-                    your pantry is empty
+                    your grocery list is empty
                 </h2>
                 <p class="text-gray-600 mb-6">
                     add some recipes to get started
@@ -167,21 +204,96 @@
 
                     <!-- Ingredients Section -->
                     <div>
-                        <h2
-                            class="text-xl font-medium text-gray-800 tracking-tight mb-6"
-                        >
-                            shopping list ({cartIngredients.length} items)
-                        </h2>
+                        <div class="flex items-center justify-between mb-6">
+                            <h2
+                                class="text-xl font-medium text-gray-800 tracking-tight"
+                            >
+                                shopping list ({cartIngredients.length} items)
+                            </h2>
+                            {#if mergeSource}
+                                <button
+                                    on:click={cancelMerge}
+                                    class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    cancel merge
+                                </button>
+                            {/if}
+                        </div>
+
+                        {#if mergeSource}
+                            <div
+                                class="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"
+                            >
+                                select another ingredient to merge <span
+                                    class="font-semibold"
+                                    >{mergeSource.ingredient
+                                        .IngredientName}</span
+                                > into
+                            </div>
+                        {/if}
+
                         <div
                             class="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100"
                         >
                             {#each cartIngredients as ingredient}
+                                {@const isSource =
+                                    mergeSource?.ingredient.IngredientName ===
+                                    ingredient.ingredient.IngredientName}
+                                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                 <div
-                                    class="p-4 flex justify-between items-center"
+                                    class="p-4 flex justify-between items-center group transition-colors duration-150
+                                    {mergeSource && !isSource
+                                        ? 'cursor-pointer hover:bg-blue-50'
+                                        : ''}
+                                    {isSource ? 'bg-blue-50' : ''}"
+                                    on:click={() => {
+                                        if (mergeSource && !isSource)
+                                            completeMerge(ingredient);
+                                    }}
+                                    on:keydown={(e) => {
+                                        if (
+                                            mergeSource &&
+                                            !isSource &&
+                                            (e.key === "Enter" || e.key === " ")
+                                        )
+                                            completeMerge(ingredient);
+                                    }}
+                                    role={mergeSource && !isSource
+                                        ? "button"
+                                        : undefined}
+                                    tabindex={mergeSource && !isSource ? 0 : -1}
                                 >
-                                    <span class="text-gray-800 font-medium">
-                                        {ingredient.ingredient.IngredientName}
-                                    </span>
+                                    <div class="flex items-center gap-3">
+                                        {#if !mergeSource}
+                                            <button
+                                                on:click|stopPropagation={() =>
+                                                    startMerge(ingredient)}
+                                                class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-all duration-150"
+                                                title="Merge with another ingredient"
+                                                aria-label="Merge {ingredient
+                                                    .ingredient
+                                                    .IngredientName} with another ingredient"
+                                            >
+                                                <svg
+                                                    class="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        {/if}
+                                        <span class="text-gray-800 font-medium">
+                                            {ingredient.ingredient
+                                                .IngredientName}
+                                        </span>
+                                    </div>
                                     <span class="text-gray-600">
                                         {ingredient.quantity}
                                         {ingredient.measurement}
@@ -189,6 +301,52 @@
                                 </div>
                             {/each}
                         </div>
+
+                        <!-- Merge rules -->
+                        {#if Object.keys(mergeRules).length > 0}
+                            <div class="mt-6">
+                                <h3
+                                    class="text-sm font-medium text-gray-500 mb-3"
+                                >
+                                    active merge rules
+                                </h3>
+                                <div class="space-y-2">
+                                    {#each Object.entries(mergeRules) as [source, target]}
+                                        <div
+                                            class="flex items-center justify-between px-4 py-2.5 bg-gray-50 rounded-lg text-sm"
+                                        >
+                                            <span class="text-gray-600">
+                                                <span class="text-gray-800"
+                                                    >{source}</span
+                                                >
+                                                → {target}
+                                            </span>
+                                            <button
+                                                on:click={() =>
+                                                    undoMerge(source)}
+                                                class="text-gray-400 hover:text-red-500 transition-colors duration-150"
+                                                title="Remove merge rule"
+                                                aria-label="Remove merge rule for {source}"
+                                            >
+                                                <svg
+                                                    class="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
                     </div>
                 </div>
 

@@ -6,6 +6,19 @@ import { simpleGit } from 'simple-git';
 import { DatabaseService } from './databaseService';
 import { insertRecipeFromFile } from './recipeService';
 
+let cachedIngredientNames: string[] | null = null;
+
+/**
+ * Returns the cached list of ingredient names.
+ * Lazily queries the database on first access; refreshed on every seed.
+ */
+export async function getIngredientNames(): Promise<string[]> {
+    if (!cachedIngredientNames) {
+        cachedIngredientNames = await DatabaseService.getAllIngredientNames();
+    }
+    return cachedIngredientNames;
+}
+
 const git = simpleGit();
 const repoUrl = process.env.GIT_REPO_URL || 'https://github.com/nebmit/food-data.git';
 
@@ -88,4 +101,7 @@ export async function updateDatabase() {
             .webp({ quality: 80 })
             .toFile(targetImagePath);
     }
+
+    // Refresh the ingredient name cache after seeding
+    cachedIngredientNames = await DatabaseService.getAllIngredientNames();
 }

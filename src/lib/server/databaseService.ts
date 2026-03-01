@@ -114,6 +114,16 @@ export class DatabaseService {
     }
 
     /**
+     * Returns all ingredient names sorted alphabetically, excluding recipe-ingredients.
+     */
+    public static async getAllIngredientNames(): Promise<string[]> {
+        const rows = await DatabaseService.db.all<{ IngredientName: string }[]>(
+            `SELECT IngredientName FROM Ingredients WHERE IsRecipe = 0 ORDER BY IngredientName COLLATE NOCASE`
+        );
+        return rows.map(r => r.IngredientName);
+    }
+
+    /**
      * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getIngredientById(ingredientId: number): Promise<Ingredient> {

@@ -23,8 +23,9 @@
     const items: RecipeItem[] = recipeVersion.Items;
     const notes: string[] = recipeVersion.Notes;
     const description: string = recipeVersion.Description;
-    const source: string = recipeVersion.Source;
-    const cuisine: string = recipeVersion.Cuisine;
+
+    const totalTime =
+        recipeVersion.ActiveTimeMinutes + recipeVersion.PassiveTimeMinutes;
 
     const imageUrl =
         "/images/recipes/" + encodeURIComponent(recipe.RecipeName) + ".webp";
@@ -47,208 +48,230 @@
         const scaled = quantity * factor;
         return scaled % 1 === 0 ? scaled.toFixed(0) : scaled.toFixed(1);
     }
+
+    function incrementPortion() {
+        if (selectedPortion < 99) selectedPortion++;
+    }
+
+    function decrementPortion() {
+        if (selectedPortion > 1) selectedPortion--;
+    }
 </script>
 
-<div class="bg-white flex-1">
-    <!-- Hero Section -->
-    <div class="relative h-48 md:h-56 mb-6">
+<div class="recipe-page bg-white flex-1">
+    <!-- Hero Image -->
+    <div class="relative h-56 sm:h-64 md:h-72 lg:h-80">
         <img
             class="absolute inset-0 w-full h-full object-cover"
             src={imageUrl}
             alt={recipe.RecipeName}
         />
-        <div class="absolute inset-0 bg-black/40"></div>
+        <div
+            class="absolute inset-0"
+            style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.05) 100%);"
+        ></div>
 
-        <!-- Recipe Title -->
+        <!-- Title overlay -->
         <div class="absolute inset-0 flex items-end">
-            <div class="w-full max-w-6xl mx-auto p-4 md:p-6 lg:px-8">
+            <div class="w-full max-w-5xl mx-auto px-5 pb-5 md:px-8 md:pb-6">
                 <h1
-                    class="text-xl md:text-2xl lg:text-3xl font-bold text-white tracking-tight mb-1"
-                    style="text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6);"
+                    class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight"
                 >
                     {recipe.RecipeName}
                 </h1>
-
-                {#if cuisine || source}
-                    <p
-                        class="text-white/80 text-sm mb-1"
-                        style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);"
-                    >
-                        {#if cuisine}{cuisine}{/if}
-                        {#if cuisine && source}
-                            ·
-                        {/if}
-                        {#if source}{source}{/if}
-                    </p>
-                {/if}
-
-                <!-- Quick Info Bar -->
-                <div
-                    class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-white text-sm"
-                    style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.5);"
-                >
-                    <div class="flex items-center gap-3">
-                        <span
-                            >{selectedPortion}
-                            {recipeVersion.PortionDescriptor}</span
-                        >
-                        <span>•</span>
-                        <span
-                            >{recipeVersion.ActiveTimeMinutes +
-                                recipeVersion.PassiveTimeMinutes} min</span
-                        >
-                    </div>
-                    {#if recipeVersion.ComplexityRating || recipeVersion.MayhemRating}
-                        <div class="flex items-center gap-3">
-                            {#if recipeVersion.ComplexityRating}
-                                <div class="flex items-center gap-1">
-                                    <span>complexity</span>
-                                    <div class="flex gap-0.5">
-                                        {#each Array(5).keys() as i}
-                                            <div
-                                                class="w-1.5 h-1.5 rounded-full {i <
-                                                recipeVersion.ComplexityRating
-                                                    ? 'bg-yellow-400'
-                                                    : 'bg-white/40'}"
-                                                style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.7));"
-                                            ></div>
-                                        {/each}
-                                    </div>
-                                </div>
-                            {/if}
-                            {#if recipeVersion.MayhemRating}
-                                {#if recipeVersion.ComplexityRating}
-                                    <span>•</span>
-                                {/if}
-                                <div class="flex items-center gap-1">
-                                    <span>mayhem</span>
-                                    <div class="flex gap-0.5">
-                                        {#each Array(5).keys() as i}
-                                            <div
-                                                class="w-1.5 h-1.5 rounded-full {i <
-                                                recipeVersion.MayhemRating
-                                                    ? 'bg-red-400'
-                                                    : 'bg-white/40'}"
-                                                style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.7));"
-                                            ></div>
-                                        {/each}
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                </div>
             </div>
         </div>
 
         <!-- Add to Cart Button -->
         {#if user.isAuthenticated}
-            <div
-                class="absolute top-3 right-0 w-full max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pointer-events-none"
+            <button
+                class="absolute top-4 right-4 md:right-6 flex items-center gap-1.5 px-3.5 py-2 bg-white/95 text-gray-800 font-medium rounded-lg text-sm shadow-sm hover:bg-white active:scale-95 transition-all duration-150"
+                on:click={() => setToCart(recipe, selectedPortion)}
             >
-                <div class="flex justify-end pointer-events-auto">
-                    <button
-                        class="px-3 py-1.5 bg-white/90 text-gray-800 font-medium rounded text-sm hover:bg-white transition-colors duration-200"
-                        on:click={() => setToCart(recipe, selectedPortion)}
-                    >
-                        add to pantry
-                    </button>
-                </div>
-            </div>
+                <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 4v16m8-8H4"
+                    />
+                </svg>
+                add to list
+            </button>
         {/if}
     </div>
 
     <!-- Content -->
-    <div class="max-w-6xl mx-auto px-6 md:px-8 pb-12">
-        <!-- Portion Selector -->
-        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center gap-4">
-                <label for="servings" class="text-sm font-medium text-gray-600"
-                    >servings</label
+    <div class="max-w-5xl mx-auto px-5 md:px-8">
+        <!-- Meta Strip -->
+        <div
+            class="flex items-center flex-wrap gap-x-4 gap-y-2 py-4 text-sm text-gray-500 border-b border-gray-100"
+        >
+            <div class="flex items-center gap-1.5">
+                <svg
+                    class="w-4 h-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="1.5"
                 >
-                <input
-                    id="servings"
-                    bind:value={selectedPortion}
-                    type="number"
-                    class="w-16 h-8 px-2 text-sm text-gray-700 bg-white border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors duration-200 text-center"
-                    min="1"
-                    max="99"
-                />
-                <span class="text-sm text-gray-600"
-                    >{recipeVersion.PortionDescriptor}</span
-                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
+                    />
+                </svg>
+                <span>{totalTime} min</span>
+                {#if recipeVersion.PassiveTimeMinutes > 0}
+                    <span class="text-gray-300">
+                        ({recipeVersion.ActiveTimeMinutes} active)
+                    </span>
+                {/if}
             </div>
+
+            {#if recipeVersion.ComplexityRating || recipeVersion.MayhemRating}
+                <div class="flex items-center gap-4">
+                    {#if recipeVersion.ComplexityRating}
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-gray-400">complexity</span>
+                            <div class="flex gap-0.5">
+                                {#each Array(5).keys() as i}
+                                    <div
+                                        class="w-2 h-2 rounded-full {i <
+                                        recipeVersion.ComplexityRating
+                                            ? 'bg-amber-400'
+                                            : 'bg-gray-200'}"
+                                    ></div>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
+                    {#if recipeVersion.MayhemRating}
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-gray-400">mayhem</span>
+                            <div class="flex gap-0.5">
+                                {#each Array(5).keys() as i}
+                                    <div
+                                        class="w-2 h-2 rounded-full {i <
+                                        recipeVersion.MayhemRating
+                                            ? 'bg-red-400'
+                                            : 'bg-gray-200'}"
+                                    ></div>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            {/if}
         </div>
 
         {#if description}
-            <p class="text-gray-600 text-sm leading-relaxed mb-6">
+            <p class="text-gray-500 text-sm leading-relaxed pt-4">
                 {description}
             </p>
         {/if}
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <!-- Instructions (shown first on mobile) -->
-            <div class="lg:col-span-3 lg:order-2">
-                <h2 class="text-lg font-bold text-gray-800 tracking-tight mb-4">
-                    instructions
-                </h2>
-                <div class="space-y-4">
-                    {#each instructions as instruction}
-                        <div class="flex gap-3">
-                            <div
-                                class="flex-shrink-0 w-7 h-7 bg-gray-800 text-white rounded-full flex items-center justify-center text-sm font-bold"
-                            >
-                                {instruction.StepNumber}
-                            </div>
-                            <div class="flex-1 pt-0.5">
-                                <p class="text-gray-700 leading-relaxed">
-                                    {@html parseInstructionScaled(
-                                        instruction.StepDetail,
-                                        ingredients,
-                                        scalingFactor,
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
+        <!-- Portion Selector -->
+        <div class="flex items-center gap-3 py-5">
+            <span
+                class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+            >
+                servings
+            </span>
+            <div class="flex items-center">
+                <button
+                    on:click={decrementPortion}
+                    class="w-9 h-9 flex items-center justify-center rounded-l-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors select-none"
+                    aria-label="Decrease servings"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M20 12H4"
+                        />
+                    </svg>
+                </button>
+                <input
+                    bind:value={selectedPortion}
+                    type="number"
+                    class="w-12 h-9 text-center text-sm font-semibold text-gray-800 border-y border-gray-200 bg-white focus:outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    min="1"
+                    max="99"
+                />
+                <button
+                    on:click={incrementPortion}
+                    class="w-9 h-9 flex items-center justify-center rounded-r-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors select-none"
+                    aria-label="Increase servings"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M12 4v16m8-8H4"
+                        />
+                    </svg>
+                </button>
             </div>
+            <span class="text-sm text-gray-500">
+                {recipeVersion.PortionDescriptor}
+            </span>
+        </div>
 
-            <!-- Ingredients & Items (shown second on mobile) -->
-            <div class="lg:col-span-2 lg:order-1 space-y-4">
+        <!-- Two-column grid on large screens -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-12">
+            <!-- Sidebar: Ingredients, Pantry, Equipment -->
+            <div class="lg:col-span-4">
                 <!-- Ingredients -->
-                <div>
+                <section class="pb-8">
                     <h2
-                        class="text-lg font-bold text-gray-800 tracking-tight mb-3"
+                        class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
                     >
                         ingredients
                     </h2>
-                    <div class="space-y-1.5">
+                    <ul class="divide-y divide-gray-100">
                         {#each ingredients as ingredient}
-                            <div
-                                class="flex justify-between items-start py-2 px-3 bg-white border border-gray-200 rounded-lg"
+                            <li
+                                class="flex justify-between items-baseline py-2.5"
                             >
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-sm font-medium text-gray-800"
-                                    >
+                                <div class="flex flex-col min-w-0 pr-4">
+                                    <span class="text-gray-800">
                                         {ingredient.Ingredient.IngredientName}
                                     </span>
                                     {#if ingredient.Prep}
-                                        <span class="text-xs text-gray-500"
-                                            >{ingredient.Prep}</span
+                                        <span
+                                            class="text-xs text-gray-400 mt-0.5"
                                         >
+                                            {ingredient.Prep}
+                                        </span>
                                     {/if}
                                     {#if ingredient.Sub}
                                         <span
-                                            class="text-xs text-gray-400 italic"
-                                            >{ingredient.Sub}</span
+                                            class="text-xs text-gray-400 italic mt-0.5"
                                         >
+                                            {ingredient.Sub}
+                                        </span>
                                     {/if}
                                 </div>
                                 <span
-                                    class="text-xs text-gray-600 font-medium whitespace-nowrap ml-2"
+                                    class="text-sm text-gray-500 font-medium whitespace-nowrap tabular-nums"
                                 >
                                     {formatQuantity(
                                         ingredient.Quantity,
@@ -256,80 +279,109 @@
                                     )}
                                     {ingredient.Measurement || ""}
                                 </span>
-                            </div>
+                            </li>
                         {/each}
-                    </div>
-                </div>
+                    </ul>
 
-                <!-- Pantry Staples -->
-                {#if pantryIngredients.length > 0}
-                    <div>
-                        <h2
-                            class="text-lg font-bold text-gray-800 tracking-tight mb-3"
-                        >
-                            pantry staples
-                        </h2>
-                        <div class="flex flex-wrap gap-1.5">
-                            {#each pantryIngredients as pantry}
-                                <span
-                                    class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded"
-                                >
-                                    {pantry.Ingredient.IngredientName}
-                                </span>
-                            {/each}
+                    <!-- Pantry Staples -->
+                    {#if pantryIngredients.length > 0}
+                        <div class="mt-5">
+                            <h3
+                                class="text-xs font-medium text-gray-500 tracking-tight mb-2"
+                            >
+                                pantry staples
+                            </h3>
+                            <div class="flex flex-wrap gap-1.5">
+                                {#each pantryIngredients as pantry}
+                                    <span
+                                        class="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full"
+                                    >
+                                        {pantry.Ingredient.IngredientName}
+                                    </span>
+                                {/each}
+                            </div>
                         </div>
-                    </div>
-                {/if}
+                    {/if}
+                </section>
 
-                <!-- Items -->
+                <!-- Equipment -->
                 {#if items.length > 0}
-                    <div>
+                    <section class="pb-8">
                         <h2
-                            class="text-lg font-bold text-gray-800 tracking-tight mb-3"
+                            class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
                         >
                             equipment
                         </h2>
-                        <div class="space-y-1.5">
+                        <div class="flex flex-wrap gap-2">
                             {#each items as item}
-                                <div
-                                    class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg"
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-full"
                                 >
-                                    <span
-                                        class="text-sm font-medium text-gray-800"
-                                    >
-                                        {item.Item.ItemName}
-                                    </span>
-                                    <span class="text-xs text-gray-600">
-                                        {item.Quantity}
-                                    </span>
-                                </div>
+                                    {item.Item.ItemName}
+                                    {#if item.Quantity > 1}
+                                        <span class="text-gray-400 text-xs"
+                                            >×{item.Quantity}</span
+                                        >
+                                    {/if}
+                                </span>
                             {/each}
                         </div>
-                    </div>
+                    </section>
                 {/if}
+            </div>
+
+            <!-- Main: Instructions, Notes -->
+            <div class="lg:col-span-8">
+                <!-- Instructions -->
+                <section class="pb-8">
+                    <h2
+                        class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
+                    >
+                        instructions
+                    </h2>
+                    <ol class="space-y-5">
+                        {#each instructions as instruction}
+                            <li class="flex gap-4">
+                                <span
+                                    class="flex-shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-sm font-bold"
+                                >
+                                    {instruction.StepNumber}
+                                </span>
+                                <p
+                                    class="flex-1 text-gray-700 leading-relaxed pt-1"
+                                >
+                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                                    {@html parseInstructionScaled(
+                                        instruction.StepDetail,
+                                        ingredients,
+                                        scalingFactor,
+                                    )}
+                                </p>
+                            </li>
+                        {/each}
+                    </ol>
+                </section>
 
                 <!-- Notes -->
                 {#if notes.length > 0}
-                    <div>
+                    <section class="pb-10">
                         <h2
-                            class="text-lg font-bold text-gray-800 tracking-tight mb-3"
+                            class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
                         >
                             notes
                         </h2>
-                        <div class="space-y-2">
+                        <div class="space-y-3">
                             {#each notes as noteText}
-                                <div
-                                    class="p-3 bg-blue-50 border border-blue-200 rounded-lg"
-                                >
+                                <div class="pl-4 border-l-2 border-gray-200">
                                     <p
-                                        class="text-gray-700 text-sm leading-relaxed"
+                                        class="text-gray-600 text-sm leading-relaxed"
                                     >
                                         {noteText}
                                     </p>
                                 </div>
                             {/each}
                         </div>
-                    </div>
+                    </section>
                 {/if}
             </div>
         </div>

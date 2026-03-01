@@ -11,7 +11,7 @@
 
     const buttons = [
         {
-            name: "Browse",
+            name: "Random",
             link: "/",
         },
         {
@@ -19,7 +19,7 @@
             link: "/search",
         },
         {
-            name: "Pantry",
+            name: "Groceries",
             link: "/cart",
         },
     ];

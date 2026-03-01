@@ -1,6 +1,15 @@
 import type { CartIngredient, Recipe } from "./types";
 
 const CART_KEY = 'CART';
+const MERGE_RULES_KEY = 'MERGE_RULES';
+
+/**
+ * A merge rule maps a "source" ingredient name to a "target" ingredient name.
+ * When building the shopping list, all source quantities get folded into the target.
+ * Example: { "unsalted butter": "butter" } means "unsalted butter" rows
+ * appear under "butter" on the list.
+ */
+export type MergeRules = Record<string, string>;
 
 type Pair = {
     recipe: Recipe
@@ -38,34 +47,81 @@ function removeFromCart(recipe: Recipe) {
     setCart(cart);
 }
 
+// --- Merge rules ---
+
+function getMergeRules(): MergeRules {
+    const raw = localStorage.getItem(MERGE_RULES_KEY);
+    return raw ? JSON.parse(raw) : {};
+}
+
+function saveMergeRules(rules: MergeRules) {
+    localStorage.setItem(MERGE_RULES_KEY, JSON.stringify(rules));
+}
+
+/**
+ * Merge `sourceName` into `targetName`. All future shopping lists will
+ * combine these under `targetName`.
+ */
+function addMergeRule(sourceName: string, targetName: string) {
+    const rules = getMergeRules();
+    rules[sourceName.toLowerCase()] = targetName;
+    saveMergeRules(rules);
+}
+
+/**
+ * Remove a merge rule so the ingredient appears separately again.
+ */
+function removeMergeRule(sourceName: string) {
+    const rules = getMergeRules();
+    delete rules[sourceName.toLowerCase()];
+    saveMergeRules(rules);
+}
+
+/**
+ * Resolve the display name for an ingredient, following merge chains.
+ */
+function resolveIngredientName(name: string, rules: MergeRules): string {
+    const seen = new Set<string>();
+    let current = name;
+    while (rules[current.toLowerCase()] && !seen.has(current.toLowerCase())) {
+        seen.add(current.toLowerCase());
+        current = rules[current.toLowerCase()];
+    }
+    return current;
+}
+
+// --- Shopping list ---
+
 function getCartIngredients(): CartIngredient[] {
     const cart = getCart();
+    const rules = getMergeRules();
 
-    const ingredientMap: { [key: number]: CartIngredient } = {};
+    const ingredientMap: Record<string, CartIngredient> = {};
 
     cart.forEach(recipePair => {
         const multiplier = recipePair.quantity / recipePair.recipe.MainVersion.PortionQuantity;
         recipePair.recipe.MainVersion.Ingredients.forEach(recipeIngredient => {
             if (recipeIngredient.Ingredient.IsRecipe) return;
 
-            const id = recipeIngredient.Ingredient.IngredientID;
+            const rawName = recipeIngredient.Ingredient.IngredientName;
+            const resolvedName = resolveIngredientName(rawName, rules);
             const quantity = recipeIngredient.Quantity;
             const measurement = recipeIngredient.Measurement;
+            const key = `${resolvedName.toLowerCase()}-${measurement}`;
 
-            if (ingredientMap[id]) {
-                ingredientMap[id].quantity += quantity * multiplier;
+            if (ingredientMap[key]) {
+                ingredientMap[key].quantity += quantity * multiplier;
             } else {
-                ingredientMap[id] = {
-                    ingredient: recipeIngredient.Ingredient,
+                ingredientMap[key] = {
+                    ingredient: { ...recipeIngredient.Ingredient, IngredientName: resolvedName },
                     quantity: quantity * multiplier,
-                    measurement: measurement
+                    measurement: measurement,
                 };
             }
         });
     });
 
-    const aggregatedIngredients = Object.values(ingredientMap);
-    return aggregatedIngredients;
+    return Object.values(ingredientMap);
 }
 
-export { getCart, getCartIngredients, setToCart };
+export { addMergeRule, getCart, getCartIngredients, getMergeRules, removeMergeRule, setToCart };
