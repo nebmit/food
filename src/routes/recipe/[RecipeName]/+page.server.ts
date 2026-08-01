@@ -9,7 +9,7 @@ export async function load({ params }) {
         return {
             recipe
         };
-    } catch (e) {
+    } catch {
         throw error(404, 'Recipe not found');
     }
 }

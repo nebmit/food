@@ -13,7 +13,7 @@
 
 <a href={"/recipe/" + encodedRecipeName} class="block group">
     <article
-        class="w-72 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer select-none hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out overflow-hidden"
+        class="w-72 bg-white rounded-2xl shadow-xs border border-gray-100 cursor-pointer select-none hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out overflow-hidden"
     >
         <div class="relative h-48 overflow-hidden">
             <img
@@ -26,7 +26,7 @@
                 class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             ></div>
             <div
-                class="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-sm text-gray-800 text-sm font-medium shadow-sm"
+                class="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-xs text-gray-800 text-sm font-medium shadow-xs"
             >
                 {recipeVersion.ActiveTimeMinutes +
                     recipeVersion.PassiveTimeMinutes} min

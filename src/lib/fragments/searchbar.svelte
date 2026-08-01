@@ -17,7 +17,7 @@
     <div class="relative flex-1 w-full">
         <input
             type="text"
-            class="w-full h-12 px-6 text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors duration-200 placeholder-gray-400"
+            class="w-full h-12 px-6 text-gray-700 bg-white border border-gray-200 rounded-lg focus:outline-hidden focus:border-gray-400 transition-colors duration-200 placeholder-gray-400"
             placeholder="search recipes..."
             on:keydown={handleKeydown}
             bind:value={searchQuery}

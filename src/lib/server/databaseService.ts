@@ -457,7 +457,7 @@ export class DatabaseService {
                 Sub: recipeIngredient.Sub || undefined,
             };
         } catch (error) {
-            throw new Error('Error getting recipe ingredient: ' + error);
+            throw new Error('Error getting recipe ingredient', { cause: error });
         }
     }
 
@@ -473,7 +473,7 @@ export class DatabaseService {
                 Measurement: '',
             };
         } catch (error) {
-            throw new Error('Error getting pantry ingredient: ' + error);
+            throw new Error('Error getting pantry ingredient', { cause: error });
         }
     }
 
@@ -488,7 +488,7 @@ export class DatabaseService {
                 Quantity: recipeItem.Quantity,
             };
         } catch (error) {
-            throw new Error('Error getting recipe item: ' + error);
+            throw new Error('Error getting recipe item', { cause: error });
         }
     }
 

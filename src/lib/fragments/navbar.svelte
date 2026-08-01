@@ -56,7 +56,7 @@
 
         <!-- Navigation Links -->
         <div class="flex flex-1 justify-center items-center max-w-96 mx-auto">
-            {#each buttons as button}
+            {#each buttons as button (button.link)}
                 <a
                     href={button.link}
                     class="flex-1 text-center text-gray-600 hover:text-gray-800 text-sm font-medium tracking-wide uppercase py-2 relative transition-all duration-300 group"
@@ -158,7 +158,7 @@
             class="md:hidden absolute top-full left-0 right-0 bg-white border-b border-black/5 shadow-lg z-40"
         >
             <div class="p-4 space-y-2">
-                {#each buttons as button}
+                {#each buttons as button (button.link)}
                     <a
                         href={button.link}
                         class="block text-gray-600 hover:text-gray-900 font-medium text-base py-3 px-4 rounded-lg transition-all duration-200 hover:bg-gray-50/80 text-center"

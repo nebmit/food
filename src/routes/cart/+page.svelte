@@ -150,7 +150,7 @@
                             recipes ({cartItems.length})
                         </h2>
                         <div class="space-y-2">
-                            {#each cartItems as item}
+                            {#each cartItems as item (item.recipe.RecipeID)}
                                 <div
                                     class="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors duration-200"
                                 >
@@ -178,7 +178,7 @@
                                                             item.recipe,
                                                             item.quantity,
                                                         )}
-                                                    class="w-14 h-7 px-2 text-sm text-gray-700 bg-white border border-gray-200 rounded focus:outline-none focus:border-gray-400 transition-colors duration-200"
+                                                    class="w-14 h-7 px-2 text-sm text-gray-700 bg-white border border-gray-200 rounded focus:outline-hidden focus:border-gray-400 transition-colors duration-200"
                                                 />
                                             </div>
                                             <div>
@@ -235,7 +235,7 @@
                         <div
                             class="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100"
                         >
-                            {#each cartIngredients as ingredient}
+                            {#each cartIngredients as ingredient (ingredient.ingredient.IngredientID)}
                                 {@const isSource =
                                     mergeSource?.ingredient.IngredientName ===
                                     ingredient.ingredient.IngredientName}
@@ -311,7 +311,7 @@
                                     active merge rules
                                 </h3>
                                 <div class="space-y-2">
-                                    {#each Object.entries(mergeRules) as [source, target]}
+                                    {#each Object.entries(mergeRules) as [source, target] (source)}
                                         <div
                                             class="flex items-center justify-between px-4 py-2.5 bg-gray-50 rounded-lg text-sm"
                                         >

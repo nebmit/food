@@ -60,7 +60,7 @@
                             </span>
                         </div>
                     {:else}
-                        {#each recipes as recipe}
+                        {#each recipes as recipe (recipe.RecipeID)}
                             <div class="mx-4 my-3">
                                 <RecipeCard {recipe} />
                             </div>

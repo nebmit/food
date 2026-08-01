@@ -24,7 +24,7 @@
 
     <!-- Shopping List -->
     <div class="px-4 py-4 space-y-2 mb-8">
-        {#each cart as ingredient}
+        {#each cart as ingredient (ingredient.ingredient.IngredientID)}
             <button
                 class={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 touch-manipulation ${
                     checkedItems[ingredient.ingredient.IngredientName]
@@ -36,7 +36,7 @@
             >
                 <!-- Checkbox -->
                 <div
-                    class={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${
+                    class={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${
                         checkedItems[ingredient.ingredient.IngredientName]
                             ? "bg-green-500 border-green-500"
                             : "border-gray-300"

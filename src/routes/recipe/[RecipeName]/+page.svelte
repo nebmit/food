@@ -85,7 +85,7 @@
         <!-- Add to Cart Button -->
         {#if user.isAuthenticated}
             <button
-                class="absolute top-4 right-4 md:right-6 flex items-center gap-1.5 px-3.5 py-2 bg-white/95 text-gray-800 font-medium rounded-lg text-sm shadow-sm hover:bg-white active:scale-95 transition-all duration-150"
+                class="absolute top-4 right-4 md:right-6 flex items-center gap-1.5 px-3.5 py-2 bg-white/95 text-gray-800 font-medium rounded-lg text-sm shadow-xs hover:bg-white active:scale-95 transition-all duration-150"
                 on:click={() => setToCart(recipe, selectedPortion)}
             >
                 <svg
@@ -140,7 +140,7 @@
                         <div class="flex items-center gap-1.5">
                             <span class="text-gray-400">complexity</span>
                             <div class="flex gap-0.5">
-                                {#each Array(5).keys() as i}
+                                {#each Array(5).keys() as i (i)}
                                     <div
                                         class="w-2 h-2 rounded-full {i <
                                         recipeVersion.ComplexityRating
@@ -155,7 +155,7 @@
                         <div class="flex items-center gap-1.5">
                             <span class="text-gray-400">mayhem</span>
                             <div class="flex gap-0.5">
-                                {#each Array(5).keys() as i}
+                                {#each Array(5).keys() as i (i)}
                                     <div
                                         class="w-2 h-2 rounded-full {i <
                                         recipeVersion.MayhemRating
@@ -206,7 +206,7 @@
                 <input
                     bind:value={selectedPortion}
                     type="number"
-                    class="w-12 h-9 text-center text-sm font-semibold text-gray-800 border-y border-gray-200 bg-white focus:outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    class="w-12 h-9 text-center text-sm font-semibold text-gray-800 border-y border-gray-200 bg-white focus:outline-hidden appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                     min="1"
                     max="99"
                 />
@@ -247,7 +247,7 @@
                         ingredients
                     </h2>
                     <ul class="divide-y divide-gray-100">
-                        {#each ingredients as ingredient}
+                        {#each ingredients as ingredient (ingredient.RecipeVersionIngredientID)}
                             <li
                                 class="flex justify-between items-baseline py-2.5"
                             >
@@ -292,7 +292,7 @@
                                 pantry staples
                             </h3>
                             <div class="flex flex-wrap gap-1.5">
-                                {#each pantryIngredients as pantry}
+                                {#each pantryIngredients as pantry (pantry.RecipeVersionIngredientID)}
                                     <span
                                         class="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full"
                                     >
@@ -313,7 +313,7 @@
                             equipment
                         </h2>
                         <div class="flex flex-wrap gap-2">
-                            {#each items as item}
+                            {#each items as item (item.RecipeVersionItemID)}
                                 <span
                                     class="inline-flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-full"
                                 >
@@ -340,10 +340,10 @@
                         instructions
                     </h2>
                     <ol class="space-y-5">
-                        {#each instructions as instruction}
+                        {#each instructions as instruction (instruction.InstructionID)}
                             <li class="flex gap-4">
                                 <span
-                                    class="flex-shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-sm font-bold"
+                                    class="shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-sm font-bold"
                                 >
                                     {instruction.StepNumber}
                                 </span>
@@ -371,7 +371,7 @@
                             notes
                         </h2>
                         <div class="space-y-3">
-                            {#each notes as noteText}
+                            {#each notes as noteText, noteIndex (noteIndex)}
                                 <div class="pl-4 border-l-2 border-gray-200">
                                     <p
                                         class="text-gray-600 text-sm leading-relaxed"
