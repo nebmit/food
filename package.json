@@ -14,7 +14,7 @@
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.7",
 		"@sveltejs/kit": "^2.70.2",
-		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@tailwindcss/typography": "^0.5.16",
 		"@types/node": "^24.13.3",
 		"@typescript-eslint/eslint-plugin": "^6.21.0",
@@ -28,16 +28,16 @@
 		"tailwindcss": "^3.4.17",
 		"tslib": "^2.8.1",
 		"typescript": "^5.9.3",
-		"vite": "^6.3.5"
+		"vite": "^8.2.0"
 	},
 	"type": "module",
 	"dependencies": {
-		"dotenv": "^16.4.7",
+		"dotenv": "^17.4.2",
 		"package-up": "^5.0.0",
-		"sharp": "^0.32.6",
+		"sharp": "^0.35.3",
 		"simple-git": "^3.36.0",
 		"sqlite": "^5.1.1",
-		"sqlite3": "^5.1.7",
+		"sqlite3": "^6.0.1",
 		"svelte-qrcode-image": "^1.0.0-rc.2",
 		"uuid": "^14.0.1",
 		"yaml": "^2.9.0"
