@@ -4,7 +4,7 @@ import path from 'path';
 import sharp from 'sharp';
 import { simpleGit } from 'simple-git';
 import { DatabaseService } from './databaseService';
-import { insertRecipeFromFile } from './recipeService';
+import { insertParsedRecipe, parseRecipeFile } from './recipeService';
 
 let cachedIngredientNames: string[] | null = null;
 
@@ -22,7 +22,9 @@ export async function getIngredientNames(): Promise<string[]> {
 const git = simpleGit();
 const repoUrl = process.env.GIT_REPO_URL || 'https://github.com/nebmit/food-data.git';
 
-const localPath = path.join(path.dirname(packageUpSync() || '/'), 'data');
+const projectRoot = path.dirname(packageUpSync() || '/');
+const localPath = path.join(projectRoot, 'data');
+const schemaPath = path.join(projectRoot, 'db_schema.sql');
 
 
 async function update() {
@@ -72,18 +74,21 @@ export async function updateDatabase() {
     // Pull the latest data
     await update();
 
-    // Clear existing database recipes
-    await DatabaseService.clearRecipes();
-
     const rawRecipes = getRecipeFiles();
-    for (const rawRecipe of rawRecipes) {
-        // Insert the recipe into the database
-        try {
-            await insertRecipeFromFile(rawRecipe.name, rawRecipe.instructionPath);
-        } catch (error) {
-            console.error(`Error inserting recipe ${rawRecipe.name}:`, error);
-        }
+    const parsedRecipes = rawRecipes.map(rawRecipe => ({
+        name: rawRecipe.name,
+        recipe: parseRecipeFile(rawRecipe.instructionPath),
+    }));
+    const schema = fs.readFileSync(schemaPath, 'utf8');
 
+    await DatabaseService.runInTransaction(async () => {
+        await DatabaseService.rebuildRecipeStorage(schema);
+        for (const parsedRecipe of parsedRecipes) {
+            await insertParsedRecipe(parsedRecipe.name, parsedRecipe.recipe);
+        }
+    });
+
+    for (const rawRecipe of rawRecipes) {
         // Read the image
         const image = fs.readFileSync(rawRecipe.imagePath);
         const targetImagePath = path.join('upload', 'images', 'recipes', `${rawRecipe.name}.webp`);
@@ -95,8 +100,7 @@ export async function updateDatabase() {
         }
 
         // Copy the image to the upload directory
-        const sharpInstance = sharp(image);
-        sharpInstance
+        await sharp(image)
             .resize(800)
             .webp({ quality: 80 })
             .toFile(targetImagePath);

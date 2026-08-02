@@ -1,116 +1,141 @@
-import fs from "fs";
-import { ItemNotFoundException, ParsingException } from "../types";
-import { DatabaseService } from "./databaseService";
-import type { IngredientRaw, RecipeVersionRaw, RequiredItemRaw } from "./databaseTypes";
-import { parseRecipeYAML } from "./recipeParserYAML";
+import fs from 'fs';
+import { ItemNotFoundException, ParsingException } from '../types';
+import { DatabaseService } from './databaseService';
+import type { IngredientRaw, RecipeTagRaw, RequiredItemRaw } from './databaseTypes';
+import { parseRecipeYAML, type ParsedRecipe } from './recipeParserYAML';
 
-export interface ParsedRecipe {
-    Meta: Partial<RecipeVersionRaw>;
-    Tags: string[];
-    Ingredients: Array<{
-        IngredientName: string;
-        Quantity: number;
-        Measurement: string;
-        Prep?: string;
-        Sub?: string;
-    }>;
-    PantryIngredients: Array<{
-        IngredientName: string;
-    }>;
-    Items: Array<{
-        ItemName: string;
-        Quantity: number;
-    }>;
-    Instructions: string[];
-    Notes: string[];
+export function parseRecipeFile(recipePath: string): ParsedRecipe {
+    if (!recipePath.endsWith('.yaml')) {
+        throw new ParsingException('Only YAML recipe files are supported');
+    }
+    return parseRecipeYAML(fs.readFileSync(recipePath, 'utf8'));
 }
 
-async function insertRecipeVersionFromString(parsedRecipe: ParsedRecipe): Promise<number> {
-    const { Meta, Ingredients, PantryIngredients, Items, Instructions, Notes } = parsedRecipe;
+export async function insertParsedRecipe(recipeName: string, parsedRecipe: ParsedRecipe): Promise<number> {
+    const versionId = await DatabaseService.insertRecipeVersion(parsedRecipe.Meta);
 
-    const insertedVersionId = await DatabaseService.insertRecipeVersion(Meta);
-
-    for (const parsedIngredient of Ingredients) {
-        const ingredient = await getOrCreateIngredient(parsedIngredient.IngredientName);
-
-        await DatabaseService.insertRecipeVersionIngredient({
-            IngredientID: ingredient.IngredientID,
-            RecipeVersionID: insertedVersionId,
-            Quantity: parsedIngredient.Quantity,
-            Measurement: parsedIngredient.Measurement,
-            Prep: parsedIngredient.Prep || undefined,
-            Sub: parsedIngredient.Sub || undefined,
+    for (let tagIndex = 0; tagIndex < parsedRecipe.Tags.length; tagIndex++) {
+        const tag = await getOrCreateRecipeTag(parsedRecipe.Tags[tagIndex]);
+        await DatabaseService.insertRecipeVersionTagAssignment({
+            RecipeVersionID: versionId,
+            RecipeTagID: tag.RecipeTagID,
+            TagNumber: tagIndex + 1,
         });
     }
 
-    for (const pantryItem of PantryIngredients) {
-        const ingredient = await getOrCreateIngredient(pantryItem.IngredientName);
-
-        await DatabaseService.insertRecipeVersionPantryIngredient({
-            IngredientID: ingredient.IngredientID,
-            RecipeVersionID: insertedVersionId,
-        });
-    }
-
-    for (const parsedItem of Items) {
-        let item: RequiredItemRaw;
-        try {
-            item = await DatabaseService.getItemByName(parsedItem.ItemName);
-        } catch (e: unknown) {
-            if (e instanceof ItemNotFoundException) {
-                const itemId = await DatabaseService.insertItem({ ItemName: parsedItem.ItemName });
-                item = await DatabaseService.getItemById(itemId);
-            } else {
-                throw e;
-            }
-        }
-
+    for (let itemIndex = 0; itemIndex < parsedRecipe.Items.length; itemIndex++) {
+        const parsedItem = parsedRecipe.Items[itemIndex];
+        const item = await getOrCreateItem(parsedItem.ItemName);
         await DatabaseService.insertRecipeVersionItem({
             ItemID: item.ItemID,
-            RecipeVersionID: insertedVersionId,
-            Quantity: parsedItem.Quantity
+            RecipeVersionID: versionId,
+            ItemNumber: itemIndex + 1,
+            Quantity: parsedItem.Quantity,
+            Sub: parsedItem.Sub,
         });
     }
 
-    for (let i = 0; i < Instructions.length; i++) {
-        await DatabaseService.insertInstruction({
-            RecipeVersionID: insertedVersionId,
-            StepNumber: i + 1,
-            StepDetail: Instructions[i]
+    const stageIds = new Map<string, number>();
+    for (let tableIndex = 0; tableIndex < parsedRecipe.Tables.length; tableIndex++) {
+        const parsedTable = parsedRecipe.Tables[tableIndex];
+        const tableId = await DatabaseService.insertRecipeVersionTable({
+            RecipeVersionID: versionId,
+            TableNumber: tableIndex + 1,
+            TableName: parsedTable.TableName,
         });
+
+        for (let stageIndex = 0; stageIndex < parsedTable.Stages.length; stageIndex++) {
+            const parsedStage = parsedTable.Stages[stageIndex];
+            const stageId = await DatabaseService.insertRecipeStage({
+                RecipeVersionID: versionId,
+                RecipeVersionTableID: tableId,
+                StageNumber: stageIndex + 1,
+                StageKey: parsedStage.StageKey,
+                Setup: parsedStage.Setup,
+                Action: parsedStage.Action,
+                Hint: parsedStage.Hint,
+            });
+            stageIds.set(parsedStage.StageKey, stageId);
+
+            for (let inputIndex = 0; inputIndex < parsedStage.Inputs.length; inputIndex++) {
+                const parsedInput = parsedStage.Inputs[inputIndex];
+                if (parsedInput.Type === 'ingredient') {
+                    const ingredient = await getOrCreateIngredient(parsedInput.IngredientName);
+                    await DatabaseService.insertRecipeStageInput({
+                        RecipeStageID: stageId,
+                        InputNumber: inputIndex + 1,
+                        IngredientID: ingredient.IngredientID,
+                        Quantity: parsedInput.Quantity,
+                        Measurement: parsedInput.Measurement,
+                        Hint: parsedInput.Hint,
+                    });
+                    continue;
+                }
+
+                const sourceStageId = stageIds.get(parsedInput.StageKey);
+                if (!sourceStageId) {
+                    throw new ParsingException(`Stage '${parsedInput.StageKey}' was not stored before it was referenced`);
+                }
+                await DatabaseService.insertRecipeStageInput({
+                    RecipeStageID: stageId,
+                    InputNumber: inputIndex + 1,
+                    SourceRecipeStageID: sourceStageId,
+                    Part: parsedInput.Part,
+                });
+            }
+        }
     }
 
-    for (let i = 0; i < Notes.length; i++) {
+    for (let noteIndex = 0; noteIndex < parsedRecipe.Notes.length; noteIndex++) {
         await DatabaseService.insertNote({
-            RecipeVersionID: insertedVersionId,
-            NoteNumber: i + 1,
-            NoteText: Notes[i],
+            RecipeVersionID: versionId,
+            NoteNumber: noteIndex + 1,
+            NoteText: parsedRecipe.Notes[noteIndex],
         });
     }
 
-    return insertedVersionId;
+    return await DatabaseService.insertRecipe({ RecipeName: recipeName, MainVersionID: versionId });
 }
 
 async function getOrCreateIngredient(name: string): Promise<IngredientRaw> {
     try {
         return await DatabaseService.getIngredientByName(name);
-    } catch (e: unknown) {
-        if (e instanceof ItemNotFoundException) {
+    } catch (error: unknown) {
+        if (error instanceof ItemNotFoundException) {
             const id = await DatabaseService.insertIngredient({ IngredientName: name });
             return await DatabaseService.getIngredientById(id);
         }
-        throw e;
+        throw error;
+    }
+}
+
+async function getOrCreateItem(name: string): Promise<RequiredItemRaw> {
+    try {
+        return await DatabaseService.getItemByName(name);
+    } catch (error: unknown) {
+        if (error instanceof ItemNotFoundException) {
+            const id = await DatabaseService.insertItem({ ItemName: name });
+            return await DatabaseService.getItemById(id);
+        }
+        throw error;
+    }
+}
+
+async function getOrCreateRecipeTag(name: string): Promise<RecipeTagRaw> {
+    try {
+        return await DatabaseService.getRecipeTagByName(name);
+    } catch (error: unknown) {
+        if (error instanceof ItemNotFoundException) {
+            const id = await DatabaseService.insertRecipeTag({ TagName: name });
+            return { RecipeTagID: id, TagName: name };
+        }
+        throw error;
     }
 }
 
 export async function insertRecipeFromFile(recipeName: string, recipePath: string): Promise<number> {
-    const recipeData = fs.readFileSync(recipePath, 'utf8');
-
-    if (!recipePath.endsWith('.yaml')) {
-        throw new ParsingException('Only YAML recipe files are supported');
-    }
-
-    const parsedRecipe = parseRecipeYAML(recipeData);
-    const versionId = await insertRecipeVersionFromString(parsedRecipe);
-    return await DatabaseService.insertRecipe({ RecipeName: recipeName, MainVersionID: versionId });
+    const parsedRecipe = parseRecipeFile(recipePath);
+    return await DatabaseService.runInTransaction(
+        async () => await insertParsedRecipe(recipeName, parsedRecipe),
+    );
 }

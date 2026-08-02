@@ -8,6 +8,7 @@ export interface RecipeVersionRaw {
     RecipeVersionID: number;
     ParentVersionID?: number;
     VersionComment?: string;
+    SchemaVersion: number;
     Description: string;
     Source: string;
     Cuisine: string;
@@ -40,8 +41,36 @@ export interface RecipeVersionPantryIngredientRaw {
     RecipeVersionPantryIngredientID: number;
     RecipeVersionID: number;
     IngredientID: number;
-    Quantity: number;
-    Measurement: string;
+}
+
+export interface RecipeVersionTableRaw {
+    RecipeVersionTableID: number;
+    RecipeVersionID: number;
+    TableNumber: number;
+    TableName: string;
+}
+
+export interface RecipeStageRaw {
+    RecipeStageID: number;
+    RecipeVersionID: number;
+    RecipeVersionTableID: number;
+    StageNumber: number;
+    StageKey: string;
+    Setup: boolean;
+    Action: string;
+    Hint?: string;
+}
+
+export interface RecipeStageInputRaw {
+    RecipeStageInputID: number;
+    RecipeStageID: number;
+    InputNumber: number;
+    IngredientID?: number;
+    SourceRecipeStageID?: number;
+    Quantity?: number;
+    Measurement?: string;
+    Hint?: string;
+    Part?: string;
 }
 
 export interface RequiredItemRaw {
@@ -53,7 +82,21 @@ export interface RecipeVersionItemRaw {
     RecipeVersionItemID: number;
     RecipeVersionID: number;
     ItemID: number;
+    ItemNumber: number;
     Quantity: number;
+    Sub?: string;
+}
+
+export interface RecipeTagRaw {
+    RecipeTagID: number;
+    TagName: string;
+}
+
+export interface RecipeVersionTagAssignmentRaw {
+    RecipeVersionTagAssignmentID: number;
+    RecipeVersionID: number;
+    RecipeTagID: number;
+    TagNumber: number;
 }
 
 export interface InstructionRaw {
