@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { bandOf, type Cell, type RecipeLayout } from "$lib/cookingTable";
+    import { type Cell, type RecipeLayout } from "$lib/cookingTable";
     import { formatAmount, formatTime, padStep } from "$lib/format";
     import { imageFallback } from "$lib/imageFallback";
     import type { Recipe } from "$lib/types";
@@ -37,15 +37,29 @@
         const min = Math.min(112, Math.max(80, Math.floor(available / actionCols)));
         return `250px repeat(${actionCols}, minmax(${min}px, 1fr)) 190px`;
     }
-    $: activeCell = cooking
-        ? layout.cells.find(
-              (c) =>
-                  (c.kind === "stage" || c.kind === "setup") &&
-                  c.step === activeStep,
-          )
-        : undefined;
-    $: activeBand = activeCell ? bandOf(activeCell) : null;
     $: totalTime = version.ActiveTimeMinutes + version.PassiveTimeMinutes;
+
+    /**
+     * Column-0 rows keyed by the step that consumes them. A stage cell spans its whole
+     * input subtree, so its row span is *not* what goes in now — `inputRows` is.
+     */
+    $: rowStep = new Map(
+        layout.cells.flatMap((cell) =>
+            cell.kind === "stage" || cell.kind === "setup"
+                ? cell.inputRows.map((row) => [row, cell.step] as const)
+                : [],
+        ),
+    );
+    $: activeRows = cooking
+        ? new Set(
+              [...rowStep].filter(([, s]) => s === activeStep).map(([row]) => row),
+          )
+        : new Set<number>();
+    $: usedRows = cooking
+        ? new Set(
+              [...rowStep].filter(([, s]) => s < activeStep).map(([row]) => row),
+          )
+        : new Set<number>();
 
     /** Action blocks tint deeper toward the finish. */
     function tint(col: number, actionCols: number): string {
@@ -56,8 +70,18 @@
         return TINTS[index];
     }
 
-    function inBand(row: number, band: [number, number] | null): boolean {
-        return band !== null && row >= band[0] && row < band[1];
+    /**
+     * Bring the active block into view. Both grids are mounted at once (`hidden md:block`
+     * and `md:hidden`), so scroll only the one that is actually laid out — a
+     * `display:none` subtree has no client rects.
+     */
+    let stepNodes: Record<number, HTMLElement | undefined> = {};
+    $: if (cooking && activeStep) scrollToStep(activeStep);
+
+    function scrollToStep(step: number) {
+        const node = stepNodes[step];
+        if (!node || node.getClientRects().length === 0) return;
+        node.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
 
     function cellKey(cell: Cell): string {
@@ -108,9 +132,13 @@
                 >
                     {formatAmount(cell.input, scalingFactor)}
                 </span>
-                {#if inBand(cell.row, activeBand)}
+                {#if activeRows.has(cell.row)}
                     <div
                         class="absolute inset-0 pointer-events-none bg-accent/[.07] border-l-[3px] border-accent"
+                    ></div>
+                {:else if usedRows.has(cell.row)}
+                    <div
+                        class="absolute inset-0 pointer-events-none bg-paper/70 border-l-[3px] border-rule"
                     ></div>
                 {/if}
             </div>
@@ -130,9 +158,13 @@
                 {#if !compact}
                     <span class="text-[11px] text-muted-2">{cell.caption}</span>
                 {/if}
-                {#if inBand(cell.row, activeBand)}
+                {#if activeRows.has(cell.row)}
                     <div
                         class="absolute inset-0 pointer-events-none bg-accent/[.07] border-l-[3px] border-accent"
+                    ></div>
+                {:else if usedRows.has(cell.row)}
+                    <div
+                        class="absolute inset-0 pointer-events-none bg-paper/70 border-l-[3px] border-rule"
                     ></div>
                 {/if}
             </div>
@@ -146,6 +178,7 @@
                     : tint(cell.col, layout.actionCols)}"
                 style:grid-row={at.row}
                 style:grid-column={at.col}
+                bind:this={stepNodes[cell.step]}
                 on:click={() => dispatch("pick", cell.step)}
             >
                 <div

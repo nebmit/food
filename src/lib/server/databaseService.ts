@@ -230,7 +230,7 @@ export class DatabaseService {
         );
         const stageRows: RecipeStageRaw[] = await DatabaseService.db.all(
             `SELECT s.RecipeStageID, s.RecipeVersionID, s.RecipeVersionTableID, s.StageNumber,
-                    s.StageKey, s.Setup, s.Action, s.Hint
+                    s.StageKey, s.Setup, s.Action, s.Hint, s.DurationMinutes
              FROM RecipeStages s
              JOIN RecipeVersionTables t ON t.RecipeVersionTableID = s.RecipeVersionTableID
              WHERE s.RecipeVersionID = ?
@@ -281,6 +281,7 @@ export class DatabaseService {
                 Setup: !!row.Setup,
                 Action: row.Action,
                 Hint: row.Hint ?? undefined,
+                DurationMinutes: row.DurationMinutes ?? undefined,
                 Inputs: inputsByStage.get(row.RecipeStageID) ?? [],
             });
             stagesByTable.set(row.RecipeVersionTableID, list);
@@ -534,7 +535,7 @@ export class DatabaseService {
 
     public static async insertRecipeStage(stage: Partial<RecipeStageRaw>): Promise<number> {
         const filtered = this.filterAllowedColumns(
-            ['RecipeVersionID', 'RecipeVersionTableID', 'StageNumber', 'StageKey', 'Setup', 'Action', 'Hint'],
+            ['RecipeVersionID', 'RecipeVersionTableID', 'StageNumber', 'StageKey', 'Setup', 'Action', 'Hint', 'DurationMinutes'],
             stage,
         );
         if (!filtered.RecipeVersionID) throw new Error('RecipeVersionID is required');
@@ -545,7 +546,7 @@ export class DatabaseService {
         if (!filtered.Action) throw new Error('Action is required');
 
         const result = await DatabaseService.db.run(
-            `INSERT INTO RecipeStages (RecipeVersionID, RecipeVersionTableID, StageNumber, StageKey, Setup, Action, Hint) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO RecipeStages (RecipeVersionID, RecipeVersionTableID, StageNumber, StageKey, Setup, Action, Hint, DurationMinutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             filtered.RecipeVersionID,
             filtered.RecipeVersionTableID,
             filtered.StageNumber,
@@ -553,6 +554,7 @@ export class DatabaseService {
             filtered.Setup,
             filtered.Action,
             filtered.Hint ?? null,
+            filtered.DurationMinutes ?? null,
         );
         if (!result.lastID) throw new Error('Error inserting recipe stage');
         return result.lastID;

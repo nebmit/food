@@ -1,8 +1,11 @@
 <script lang="ts">
     import { setToCart } from "$lib/cart";
+    import { cookSteps } from "$lib/cookStep";
     import { layoutRecipe } from "$lib/cookingTable";
-    import { formatMeasure, formatTimes, rating } from "$lib/format";
+    import { createCookTimers, viewOf } from "$lib/cookTimers";
+    import { formatAmount, formatMeasure, formatTimes, padStep, rating } from "$lib/format";
     import CookingGrid from "$lib/fragments/cookingGrid.svelte";
+    import CookScreen from "$lib/fragments/cookScreen.svelte";
     import { imageFallback } from "$lib/imageFallback";
     import { aggregateIngredients } from "$lib/recipeIngredients";
     import { pageTitle } from "$lib/stores";
@@ -46,10 +49,21 @@
     // Cook mode: one block at a time, in document order.
     let cooking = false;
     let step = 0;
+    /** The mobile full-screen cook surface; the desktop cooks in the grid itself. */
+    let cookScreenOpen = false;
+    const timers = createCookTimers();
     $: if (recipe) {
         cooking = false;
         step = 0;
+        cookScreenOpen = false;
     }
+    onDestroy(() => {
+        timers.stop();
+    });
+
+    $: steps = cookSteps(layout);
+    $: current = cooking ? steps[step - 1] : undefined;
+    $: currentTimer = current ? $timers.get(current.step) : undefined;
 
     function toggleCook() {
         cooking = !cooking;
@@ -66,23 +80,47 @@
         cooking = true;
     }
 
+    /** Tapping a block on the mobile map opens the cook screen there. */
     function pick(event: CustomEvent<number>) {
         cooking = true;
         step = event.detail;
     }
 
+    function pickMobile(event: CustomEvent<number>) {
+        pick(event);
+        cookScreenOpen = true;
+    }
+
     function startCooking() {
         cooking = true;
         step = 1;
-        document
-            .getElementById("map")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        cookScreenOpen = true;
+    }
+
+    function closeCookScreen() {
+        cookScreenOpen = false;
+        cooking = false;
+        step = 0;
+    }
+
+    function onKeydown(event: KeyboardEvent) {
+        if (cookScreenOpen || event.isComposing || event.metaKey || event.ctrlKey) return;
+        const target = event.target as HTMLElement | null;
+        if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+
+        if (event.key === "ArrowRight") {
+            event.preventDefault();
+            nextStep();
+        } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            prevStep();
+        } else if (event.key === "Escape" && cooking) {
+            cooking = false;
+            step = 0;
+        }
     }
 
     $: cookLabel = cooking ? "Exit cook mode" : "Cook mode";
-    $: cookHint = cooking
-        ? "Orange rows go in now."
-        : "Step through one block at a time.";
     $: stepLabel = cooking ? `Step ${step} / ${stepCount}` : `— / ${stepCount}`;
 
     function ingredientAmount(entry: (typeof ingredients)[number]): string {
@@ -92,6 +130,8 @@
         return entry.hints.join("; ");
     }
 </script>
+
+<svelte:window on:keydown={onKeydown} />
 
 <!-- ===================== Desktop ===================== -->
 <div class="hidden md:block flex-1">
@@ -160,34 +200,111 @@
     </div>
 
     <!-- Cook-mode bar -->
-    <div
-        class="px-10 py-3 flex items-center justify-between border-b border-rule bg-paper"
-    >
-        <div class="flex items-center gap-3.5">
-            <button
-                on:click={toggleCook}
-                class="border border-ink bg-ink text-white font-mono text-[10px] leading-none tracking-[.14em] uppercase px-3.5 py-[11px] hover:bg-accent hover:border-accent"
-            >
-                {cookLabel}
-            </button>
-            <span class="text-[13px] text-muted">{cookHint}</span>
+    <div class="px-10 py-3 border-b border-rule bg-paper">
+        <div class="flex items-center justify-between gap-6">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <button
+                    on:click={toggleCook}
+                    class="shrink-0 border border-ink bg-ink text-white font-mono text-[10px] leading-none tracking-[.14em] uppercase px-3.5 py-[11px] hover:bg-accent hover:border-accent"
+                >
+                    {cookLabel}
+                </button>
+                {#if current}
+                    <div class="flex items-baseline gap-2.5 min-w-0">
+                        <span
+                            class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-accent whitespace-nowrap"
+                        >
+                            {padStep(current.step)} · {current.where}
+                        </span>
+                        <span class="text-[15px] font-medium whitespace-nowrap"
+                            >{current.stage.Action}</span
+                        >
+                        {#if current.stage.Hint}
+                            <span class="text-[13px] text-muted truncate"
+                                >{current.stage.Hint}</span
+                            >
+                        {/if}
+                    </div>
+                {:else}
+                    <span class="text-[13px] text-muted"
+                        >Step through one block at a time. Use ← and →.</span
+                    >
+                {/if}
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button
+                    on:click={prevStep}
+                    class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
+                    aria-label="Previous step">←</button
+                >
+                <span
+                    class="font-mono text-[10px] leading-none tracking-[.1em] text-muted min-w-[72px] text-center"
+                    >{stepLabel}</span
+                >
+                <button
+                    on:click={nextStep}
+                    class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
+                    aria-label="Next step">→</button
+                >
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <button
-                on:click={prevStep}
-                class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
-                aria-label="Previous step">←</button
-            >
-            <span
-                class="font-mono text-[10px] leading-none tracking-[.1em] text-muted min-w-[72px] text-center"
-                >{stepLabel}</span
-            >
-            <button
-                on:click={nextStep}
-                class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
-                aria-label="Next step">→</button
-            >
-        </div>
+
+        {#if current}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2.5">
+                {#if current.adds.length}
+                    <span
+                        class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3"
+                        >Goes in now</span
+                    >
+                    {#each current.adds as add (add.RecipeStageInputID)}
+                        <span
+                            class="border border-accent bg-accent/[.07] text-[13px] px-2.5 py-1.5 leading-none"
+                        >
+                            {add.Ingredient.IngredientName}
+                            <span class="text-muted tabular-nums"
+                                >{formatAmount(add, scalingFactor)}</span
+                            >
+                        </span>
+                    {/each}
+                {:else}
+                    <span
+                        class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3"
+                        >Nothing new goes in</span
+                    >
+                {/if}
+
+                {#each current.from as source (source.step)}
+                    <button
+                        on:click={() => (step = source.step)}
+                        class="border border-rule bg-white font-mono text-[10px] leading-none tracking-[.1em] uppercase text-muted px-2.5 py-1.5 hover:border-ink"
+                    >
+                        {source.label}
+                    </button>
+                {/each}
+
+                {#if current.durationMinutes}
+                    {@const view = currentTimer ? viewOf(currentTimer) : null}
+                    <button
+                        on:click={() =>
+                            timers.toggle(current.step, current.durationMinutes ?? 0)}
+                        class="border px-2.5 py-1.5 font-mono text-[11px] leading-none tabular-nums {view?.finished
+                            ? 'border-accent bg-accent text-white'
+                            : 'border-accent text-accent'}"
+                    >
+                        {view
+                            ? `${view.clock}${view.running ? "" : view.finished ? " ready" : " paused"}`
+                            : `Start ${current.durationMinutes} min timer`}
+                    </button>
+                    {#if currentTimer}
+                        <button
+                            on:click={() => timers.extend(current.step, 2)}
+                            class="border border-rule bg-white font-mono text-[10px] leading-none tracking-[.1em] uppercase text-muted px-2.5 py-1.5 hover:border-ink"
+                            >+2 min</button
+                        >
+                    {/if}
+                {/if}
+            </div>
+        {/if}
     </div>
 
     <!-- The grid -->
@@ -391,7 +508,7 @@
                 {cooking}
                 activeStep={step}
                 compact
-                on:pick={pick}
+                on:pick={pickMobile}
             />
         </div>
     </div>
@@ -438,34 +555,23 @@
 <div
     class="md:hidden fixed inset-x-0 bottom-0 bg-white border-t border-ink px-5 pt-3 pb-5 z-30"
 >
-    {#if !cooking}
-        <button
-            on:click={startCooking}
-            class="w-full h-[54px] border border-ink bg-ink text-white font-mono text-xs tracking-[.16em] uppercase"
-        >
-            Start cooking · {stepCount} steps
-        </button>
-    {:else}
-        <div class="grid grid-cols-[56px_1fr_56px_auto] gap-2 items-center">
-            <button
-                on:click={prevStep}
-                class="h-12 border border-ink bg-white text-[15px]"
-                aria-label="Previous step">←</button
-            >
-            <span
-                class="text-center font-mono text-[11px] tracking-[.1em] text-muted"
-                >{stepLabel}</span
-            >
-            <button
-                on:click={nextStep}
-                class="h-12 border border-ink bg-white text-[15px]"
-                aria-label="Next step">→</button
-            >
-            <button
-                on:click={toggleCook}
-                class="h-12 px-3 border border-ink bg-ink text-white font-mono text-[10px] tracking-[.12em] uppercase"
-                >Exit</button
-            >
-        </div>
-    {/if}
+    <button
+        on:click={startCooking}
+        class="w-full h-[54px] border border-ink bg-ink text-white font-mono text-xs tracking-[.16em] uppercase"
+    >
+        {cooking ? `Resume · step ${step} / ${stepCount}` : `Start cooking · ${stepCount} steps`}
+    </button>
 </div>
+
+<!-- Mobile cook mode: a screen of its own, not the map behind a control bar. -->
+{#if cookScreenOpen}
+    <CookScreen
+        {layout}
+        {recipe}
+        {scalingFactor}
+        servings={selectedPortion}
+        {timers}
+        bind:step
+        on:close={closeCookScreen}
+    />
+{/if}

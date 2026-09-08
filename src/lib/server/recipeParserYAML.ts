@@ -32,7 +32,7 @@ const ITEM_REQUIRED_KEYS = new Set(['name']);
 const ITEM_OPTIONAL_KEYS = new Set(['quantity', 'sub']);
 const TABLE_KEYS = new Set(['name', 'stages']);
 const STAGE_REQUIRED_KEYS = new Set(['id', 'action']);
-const STAGE_OPTIONAL_KEYS = new Set(['inputs', 'hint', 'setup']);
+const STAGE_OPTIONAL_KEYS = new Set(['inputs', 'hint', 'setup', 'duration_minutes']);
 const INGREDIENT_INPUT_REQUIRED_KEYS = new Set(['ingredient']);
 const INGREDIENT_INPUT_OPTIONAL_KEYS = new Set(['quantity', 'measurement', 'hint']);
 const STAGE_INPUT_REQUIRED_KEYS = new Set(['stage']);
@@ -82,6 +82,7 @@ interface RecipeYAML {
             >;
             action: string;
             hint?: string;
+            duration_minutes?: number;
             setup?: true;
         }>;
     }>;
@@ -120,6 +121,7 @@ export interface ParsedRecipe {
             Inputs: ParsedStageInput[];
             Action: string;
             Hint?: string;
+            DurationMinutes?: number;
         }>;
     }>;
     Notes: string[];
@@ -412,10 +414,12 @@ function validateInputs(
 function validateStage(
     value: unknown,
     path: string,
+    nodePath: Array<string | number>,
     tableIndex: number,
     stageIndex: number,
     graph: StageGraph,
     errors: string[],
+    isIntegerAt: (path: Array<string | number>) => boolean,
 ) {
     if (!isMapping(value)) {
         errors.push(`'${path}' must be a mapping`);
@@ -428,6 +432,14 @@ function validateStage(
     const validStageKey = validateStageId(stageKey, `${path}.id`, errors);
     if ('action' in value) validateString(value.action, `${path}.action`, errors);
     if ('hint' in value) validateString(value.hint, `${path}.hint`, errors);
+    if ('duration_minutes' in value) {
+        validatePositiveInteger(
+            value.duration_minutes,
+            `${path}.duration_minutes`,
+            errors,
+            isIntegerAt([...nodePath, 'duration_minutes']),
+        );
+    }
 
     let isSetup = false;
     if ('setup' in value) {
@@ -480,7 +492,11 @@ function validateStageGraph(graph: StageGraph, errors: string[]) {
     }
 }
 
-function validateTables(value: unknown, errors: string[]) {
+function validateTables(
+    value: unknown,
+    errors: string[],
+    isIntegerAt: (path: Array<string | number>) => boolean,
+) {
     if (!Array.isArray(value) || value.length === 0) {
         errors.push("'tables' must be a non-empty list");
         return;
@@ -517,7 +533,16 @@ function validateTables(value: unknown, errors: string[]) {
         }
 
         table.stages.forEach((stage, stageIndex) => {
-            validateStage(stage, `${tablePath}.stages[${stageIndex}]`, tableIndex, stageIndex, graph, errors);
+            validateStage(
+                stage,
+                `${tablePath}.stages[${stageIndex}]`,
+                ['tables', tableIndex, 'stages', stageIndex],
+                tableIndex,
+                stageIndex,
+                graph,
+                errors,
+                isIntegerAt,
+            );
         });
 
         const finalStage = table.stages[table.stages.length - 1];
@@ -554,7 +579,7 @@ function validateRecipeFormat(
     if ('portion' in data) validatePortion(data.portion, errors, isIntegerAt);
     if ('tags' in data) validateStringList(data.tags, 'tags', errors);
     if ('items' in data) validateItems(data.items, errors);
-    if ('tables' in data) validateTables(data.tables, errors);
+    if ('tables' in data) validateTables(data.tables, errors, isIntegerAt);
     if ('note' in data) validateStringList(data.note, 'note', errors);
 
     if (errors.length > 0) throw new ParsingException(errors.join('\n'));
@@ -621,6 +646,7 @@ export function parseRecipeYAML(recipeData: string): ParsedRecipe {
                 }),
                 Action: stage.action,
                 Hint: stage.hint,
+                DurationMinutes: stage.duration_minutes,
             })),
         })),
         Notes: parsedYaml.note ?? [],

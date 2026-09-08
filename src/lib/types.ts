@@ -43,6 +43,8 @@ export interface RecipeStage {
     Setup: boolean;
     Action: string;
     Hint?: string;
+    /** Whole minutes to set a timer to; absent when the stage has no set time. */
+    DurationMinutes?: number;
     Inputs: StageInput[];
 }
 

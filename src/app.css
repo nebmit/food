@@ -25,6 +25,15 @@
     --color-carry: #c9c7c0;
     --color-carry-dash: #b9b7b0;
     --color-canvas: #e8e7e3;
+
+    /* Cook mode runs on a dark ground ("Food - Mobile" screens 03/04). */
+    --color-night: #141412;
+    --color-night-2: #1e1d1a;
+    --color-night-rule: #2c2a26;
+    --color-night-edge: #3a3833;
+    --color-night-muted: #7d7b75;
+    --color-night-body: #b3b1aa;
+    --color-night-text: #e6e4de;
 }
 
 html,

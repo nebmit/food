@@ -43,6 +43,7 @@ export interface RecipeStageRaw {
     Setup: boolean;
     Action: string;
     Hint?: string;
+    DurationMinutes?: number;
 }
 
 export interface RecipeStageInputRaw {

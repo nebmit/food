@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS RecipeStages (
     Setup BOOLEAN NOT NULL DEFAULT 0 CHECK (Setup IN (0, 1)),
     Action TEXT NOT NULL,
     Hint TEXT,
+    DurationMinutes INTEGER CHECK (DurationMinutes IS NULL OR DurationMinutes > 0),
     UNIQUE (RecipeVersionID, StageKey),
     UNIQUE (RecipeVersionTableID, StageNumber),
     FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID) ON DELETE CASCADE,

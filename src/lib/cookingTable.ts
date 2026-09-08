@@ -47,6 +47,14 @@ export interface StageCell {
     tableName?: string;
     /** The `part` named by the reference that inlined this stage ("aromatic base left in the pan"). */
     inPart?: string;
+    /**
+     * Rows of this stage's own ingredient and reference cells — what goes in at this step.
+     * Deliberately not `rowSpan`, which covers the whole input subtree: those rows went in
+     * at earlier steps.
+     */
+    inputRows: number[];
+    /** Steps of the prepared inputs this stage consumes, inlined or referenced. */
+    sourceSteps: number[];
 }
 
 /** A setup stage (preheat, line a tray): one full-width row above the flow. */
@@ -58,6 +66,8 @@ export interface SetupCell {
     colSpan: number;
     stage: RecipeStage;
     step: number;
+    /** Always empty: a setup stage takes no inputs. Present so cook mode can treat both alike. */
+    inputRows: number[];
 }
 
 export interface DishCell {
@@ -153,17 +163,23 @@ export function layoutRecipe(version: RecipeVersion): RecipeLayout {
 
         let row = startRow;
         const children: Array<{ row: number; rowSpan: number; col: number }> = [];
+        /** Column-0 rows this stage itself consumes; a nested block's rows belong to that block. */
+        const inputRows: number[] = [];
+        const sourceSteps: number[] = [];
 
         stage.Inputs.forEach((input, index) => {
             if (input.Type === 'ingredient') {
                 cells.push({ kind: 'ingredient', row, col: 0, rowSpan: 1, input });
                 children.push({ row, rowSpan: 1, col: 0 });
+                inputRows.push(row);
                 row += 1;
                 return;
             }
 
             const source = byKey.get(input.SourceStageKey);
             if (!source) throw new Error(`Stage '${stage.StageKey}' references unknown stage '${input.SourceStageKey}'`);
+
+            sourceSteps.push(source.step);
 
             if (firstReference.get(input.SourceStageKey) === referenceId(stage.StageKey, index)) {
                 const sub = place(source, row);
@@ -183,6 +199,7 @@ export function layoutRecipe(version: RecipeVersion): RecipeLayout {
                 caption: `from ${padStep(source.step)} · ${source.stage.Action}`,
             });
             children.push({ row, rowSpan: 1, col: 0 });
+            inputRows.push(row);
             row += 1;
         });
 
@@ -201,6 +218,8 @@ export function layoutRecipe(version: RecipeVersion): RecipeLayout {
             stage,
             step: step.step,
             tableName: tableNames.get(stage.StageKey),
+            inputRows,
+            sourceSteps,
         };
         cells.push(cell);
 
@@ -218,7 +237,7 @@ export function layoutRecipe(version: RecipeVersion): RecipeLayout {
     const actionCols = rootPlacement.col;
 
     setupSteps.forEach((step, index) => {
-        cells.push({ kind: 'setup', row: index + 1, col: 1, rowSpan: 1, colSpan: actionCols, stage: step.stage, step: step.step });
+        cells.push({ kind: 'setup', row: index + 1, col: 1, rowSpan: 1, colSpan: actionCols, stage: step.stage, step: step.step, inputRows: [] });
         leadlessRows.add(index + 1);
     });
 

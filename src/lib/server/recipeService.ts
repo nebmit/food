@@ -54,6 +54,7 @@ export async function insertParsedRecipe(recipeName: string, parsedRecipe: Parse
                 Setup: parsedStage.Setup,
                 Action: parsedStage.Action,
                 Hint: parsedStage.Hint,
+                DurationMinutes: parsedStage.DurationMinutes,
             });
             stageIds.set(parsedStage.StageKey, stageId);
 
