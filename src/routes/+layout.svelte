@@ -5,6 +5,7 @@
     import "../app.css";
     import type { LayoutData } from "./$types";
     import Navbar from "$lib/fragments/navbar.svelte";
+    import Footer from "$lib/fragments/footer.svelte";
 
     export let data: LayoutData;
 
@@ -18,38 +19,10 @@
     <title>{$pageTitle || "Food | TBW"}</title>
 </svelte:head>
 
-<div class="layout-container">
-    <Navbar />
-    <main>
+<div class="min-h-screen flex flex-col bg-white text-ink font-sans">
+    <Navbar dataInfo={data.dataInfo} />
+    <main class="flex-1 flex flex-col w-full max-w-[1280px] mx-auto">
         <slot />
     </main>
+    <Footer dataInfo={data.dataInfo} recipeCount={data.recipeCount} />
 </div>
-
-<style>
-    :global(body) {
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .layout-container {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
-    main {
-        padding-top: 4rem; /* 64px for navbar height */
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    :global(body > div) {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-</style>

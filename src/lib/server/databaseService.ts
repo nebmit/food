@@ -2,24 +2,61 @@ import type { Database } from 'sqlite';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
-import type { CartIngredient, Ingredient, Recipe, RecipeIngredient, RecipeItem, RecipeVersion } from '../types';
+import type {
+    CartIngredient,
+    Ingredient,
+    Recipe,
+    RecipeItem,
+    RecipeStage,
+    RecipeSummary,
+    RecipeTable,
+    RecipeVersion,
+    StageInput,
+} from '../types';
 import { ItemNotFoundException } from '../types';
 import type {
     IngredientRaw,
-    InstructionRaw,
     NoteRaw,
     RecipeRaw,
     RecipeStageInputRaw,
     RecipeStageRaw,
     RecipeTagRaw,
-    RecipeVersionIngredientRaw,
     RecipeVersionItemRaw,
-    RecipeVersionPantryIngredientRaw,
     RecipeVersionRaw,
     RecipeVersionTableRaw,
     RecipeVersionTagAssignmentRaw,
     RequiredItemRaw,
 } from './databaseTypes';
+
+/** A stage input row joined with its ingredient. Columns are aliased explicitly: the
+ *  sqlite wrapper returns plain objects, so duplicate names in a join would collapse. */
+interface StageInputRow {
+    RecipeStageInputID: number;
+    RecipeStageID: number;
+    InputNumber: number;
+    IngredientID: number | null;
+    SourceRecipeStageID: number | null;
+    Quantity: number | null;
+    Measurement: string | null;
+    Hint: string | null;
+    Part: string | null;
+    IngredientName: string | null;
+    IsRecipe: number | null;
+}
+
+interface SummaryRow {
+    RecipeID: number;
+    RecipeName: string;
+    MainVersionID: number;
+    Cuisine: string;
+    Source: string;
+    ActiveTimeMinutes: number;
+    PassiveTimeMinutes: number;
+    ComplexityRating: number;
+    MayhemRating: number;
+    PortionQuantity: number;
+    PortionDescriptor: string;
+}
 
 export class DatabaseService {
     private static db: Database<sqlite3.Database, sqlite3.Statement>;
@@ -50,16 +87,20 @@ export class DatabaseService {
         }
     }
 
+    /** Drops every recipe table (FK-safe order) and recreates the schema. Cart survives. */
     public static async rebuildRecipeStorage(schema: string) {
         const tables = [
+            // Pre-v2 tables: no longer in the schema, but a database seeded before the
+            // migration still has them, and their rows block dropping the parents.
+            'RecipeVersionIngredients',
+            'RecipeVersionPantryIngredients',
+            'Instructions',
+            // Current schema, children before parents.
             'RecipeStageInputs',
             'RecipeVersionTagAssignments',
             'RecipeStages',
             'RecipeVersionTables',
-            'RecipeVersionIngredients',
-            'RecipeVersionPantryIngredients',
             'RecipeVersionItems',
-            'Instructions',
             'Notes',
             'IngredientTagAssignment',
             'Ingredients',
@@ -80,10 +121,7 @@ export class DatabaseService {
         await DatabaseService.db.run(`DELETE FROM RecipeVersionTagAssignments`);
         await DatabaseService.db.run(`DELETE FROM RecipeStages`);
         await DatabaseService.db.run(`DELETE FROM RecipeVersionTables`);
-        await DatabaseService.db.run(`DELETE FROM RecipeVersionIngredients`);
-        await DatabaseService.db.run(`DELETE FROM RecipeVersionPantryIngredients`);
         await DatabaseService.db.run(`DELETE FROM RecipeVersionItems`);
-        await DatabaseService.db.run(`DELETE FROM Instructions`);
         await DatabaseService.db.run(`DELETE FROM Notes`);
         await DatabaseService.db.run(`DELETE FROM IngredientTagAssignment`);
         await DatabaseService.db.run(`DELETE FROM Ingredients`);
@@ -98,19 +136,58 @@ export class DatabaseService {
     // Public GET methods
     // ************ //
 
-    public static async getAllRecipes(): Promise<Recipe[]> {
-        const recipes: RecipeRaw[] = await DatabaseService.db.all(`SELECT * FROM Recipes`);
-        return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
-    }
-
-    public static async getRandomRecipes(limit = 10): Promise<Recipe[]> {
-        const recipes: RecipeRaw[] = await DatabaseService.db.all(
-            `SELECT * FROM Recipes ORDER BY RANDOM() LIMIT ?`,
-            limit
+    /** One row per recipe with its tags, alphabetical. No stages are loaded. */
+    public static async getRecipeSummaries(): Promise<RecipeSummary[]> {
+        const rows: SummaryRow[] = await DatabaseService.db.all(
+            `SELECT r.RecipeID, r.RecipeName, r.MainVersionID,
+                    v.Cuisine, v.Source, v.ActiveTimeMinutes, v.PassiveTimeMinutes,
+                    v.ComplexityRating, v.MayhemRating, v.PortionQuantity, v.PortionDescriptor
+             FROM Recipes r
+             JOIN RecipeVersions v ON v.RecipeVersionID = r.MainVersionID
+             ORDER BY r.RecipeName COLLATE NOCASE`
         );
-        return Promise.all(recipes.map(async recipe => await DatabaseService.getRecipeById(recipe.RecipeID)));
+        const tagRows: Array<{ RecipeVersionID: number; TagName: string }> = await DatabaseService.db.all(
+            `SELECT a.RecipeVersionID, t.TagName
+             FROM RecipeVersionTagAssignments a
+             JOIN RecipeTags t ON t.RecipeTagID = a.RecipeTagID
+             ORDER BY a.RecipeVersionID, a.TagNumber`
+        );
+        const tagsByVersion = new Map<number, string[]>();
+        for (const tag of tagRows) {
+            const list = tagsByVersion.get(tag.RecipeVersionID) ?? [];
+            list.push(tag.TagName);
+            tagsByVersion.set(tag.RecipeVersionID, list);
+        }
+        return rows.map(row => ({
+            RecipeID: row.RecipeID,
+            RecipeName: row.RecipeName,
+            Cuisine: row.Cuisine || '',
+            Source: row.Source || '',
+            ActiveTimeMinutes: row.ActiveTimeMinutes,
+            PassiveTimeMinutes: row.PassiveTimeMinutes,
+            ComplexityRating: row.ComplexityRating,
+            MayhemRating: row.MayhemRating,
+            PortionQuantity: row.PortionQuantity,
+            PortionDescriptor: row.PortionDescriptor,
+            Tags: tagsByVersion.get(row.MainVersionID) ?? [],
+        }));
     }
 
+    public static async getRecipeCount(): Promise<number> {
+        const row: { n: number } | undefined = await DatabaseService.db.get(`SELECT COUNT(*) AS n FROM Recipes`);
+        return row?.n ?? 0;
+    }
+
+    /**
+     * @throws {ItemNotFoundException} if there are no recipes
+     */
+    public static async getRandomRecipeName(): Promise<string> {
+        const row: { RecipeName: string } | undefined = await DatabaseService.db.get(
+            `SELECT RecipeName FROM Recipes ORDER BY RANDOM() LIMIT 1`
+        );
+        if (!row) throw new ItemNotFoundException('No recipes found');
+        return row.RecipeName;
+    }
 
     // GET BY ID methods
     /**
@@ -139,26 +216,87 @@ export class DatabaseService {
     }
 
     /**
+     * Hydrates a version with its tables → stages → inputs, tags, items and notes.
      * @throws {ItemNotFoundException} if the item could not be found
      */
     public static async getRecipeVersionById(versionId: number): Promise<RecipeVersion> {
-        const version = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, versionId);
+        const version: RecipeVersionRaw | undefined = await DatabaseService.db.get(`SELECT * FROM RecipeVersions WHERE RecipeVersionID = ?`, versionId);
         if (!version) throw new ItemNotFoundException('Recipe version not found');
 
-        const rawIngredients: RecipeVersionIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionIngredients WHERE RecipeVersionID = ?`, versionId);
-        const ingredients: RecipeIngredient[] = await Promise.all(rawIngredients.map(DatabaseService.getRecipeIngredient));
-        const rawPantryIngredients: RecipeVersionPantryIngredientRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionPantryIngredients WHERE RecipeVersionID = ?`, versionId);
-        const pantryIngredients: RecipeIngredient[] = await Promise.all(rawPantryIngredients.map(DatabaseService.getRecipePantryIngredient));
-        const rawItems: RecipeVersionItemRaw[] = await DatabaseService.db.all(`SELECT * FROM RecipeVersionItems WHERE RecipeVersionID = ?`, versionId);
+        const tableRows: RecipeVersionTableRaw[] = await DatabaseService.db.all(
+            `SELECT RecipeVersionTableID, RecipeVersionID, TableNumber, TableName
+             FROM RecipeVersionTables WHERE RecipeVersionID = ? ORDER BY TableNumber`,
+            versionId
+        );
+        const stageRows: RecipeStageRaw[] = await DatabaseService.db.all(
+            `SELECT s.RecipeStageID, s.RecipeVersionID, s.RecipeVersionTableID, s.StageNumber,
+                    s.StageKey, s.Setup, s.Action, s.Hint
+             FROM RecipeStages s
+             JOIN RecipeVersionTables t ON t.RecipeVersionTableID = s.RecipeVersionTableID
+             WHERE s.RecipeVersionID = ?
+             ORDER BY t.TableNumber, s.StageNumber`,
+            versionId
+        );
+        const inputRows: StageInputRow[] = await DatabaseService.db.all(
+            `SELECT i.RecipeStageInputID, i.RecipeStageID, i.InputNumber, i.IngredientID,
+                    i.SourceRecipeStageID, i.Quantity, i.Measurement, i.Hint, i.Part,
+                    ing.IngredientName, ing.IsRecipe
+             FROM RecipeStageInputs i
+             JOIN RecipeStages s ON s.RecipeStageID = i.RecipeStageID
+             LEFT JOIN Ingredients ing ON ing.IngredientID = i.IngredientID
+             WHERE s.RecipeVersionID = ?
+             ORDER BY i.RecipeStageID, i.InputNumber`,
+            versionId
+        );
+        const tagRows: Array<{ TagName: string }> = await DatabaseService.db.all(
+            `SELECT t.TagName
+             FROM RecipeVersionTagAssignments a
+             JOIN RecipeTags t ON t.RecipeTagID = a.RecipeTagID
+             WHERE a.RecipeVersionID = ?
+             ORDER BY a.TagNumber`,
+            versionId
+        );
+        const rawItems: RecipeVersionItemRaw[] = await DatabaseService.db.all(
+            `SELECT * FROM RecipeVersionItems WHERE RecipeVersionID = ? ORDER BY ItemNumber`,
+            versionId
+        );
         const items: RecipeItem[] = await Promise.all(rawItems.map(DatabaseService.getRequiredItem));
-
-        const rawInstructions: InstructionRaw[] = await DatabaseService.db.all(`SELECT * FROM Instructions WHERE RecipeVersionID = ?`, versionId);
         const rawNotes: NoteRaw[] = await DatabaseService.db.all(`SELECT * FROM Notes WHERE RecipeVersionID = ? ORDER BY NoteNumber`, versionId);
+
+        const stageKeysById = new Map<number, string>(stageRows.map(stage => [stage.RecipeStageID, stage.StageKey]));
+        const inputsByStage = new Map<number, StageInput[]>();
+        for (const row of inputRows) {
+            const list = inputsByStage.get(row.RecipeStageID) ?? [];
+            list.push(DatabaseService.toStageInput(row, stageKeysById));
+            inputsByStage.set(row.RecipeStageID, list);
+        }
+
+        const stagesByTable = new Map<number, RecipeStage[]>();
+        for (const row of stageRows) {
+            const list = stagesByTable.get(row.RecipeVersionTableID) ?? [];
+            list.push({
+                RecipeStageID: row.RecipeStageID,
+                StageNumber: row.StageNumber,
+                StageKey: row.StageKey,
+                Setup: !!row.Setup,
+                Action: row.Action,
+                Hint: row.Hint ?? undefined,
+                Inputs: inputsByStage.get(row.RecipeStageID) ?? [],
+            });
+            stagesByTable.set(row.RecipeVersionTableID, list);
+        }
+
+        const tables: RecipeTable[] = tableRows.map(row => ({
+            RecipeVersionTableID: row.RecipeVersionTableID,
+            TableNumber: row.TableNumber,
+            TableName: row.TableName,
+            Stages: stagesByTable.get(row.RecipeVersionTableID) ?? [],
+        }));
 
         return {
             RecipeVersionID: version.RecipeVersionID,
-            ParentVersionID: version.ParentVersionID,
-            VersionComment: version.VersionComment,
+            ParentVersionID: version.ParentVersionID ?? undefined,
+            VersionComment: version.VersionComment ?? undefined,
             Description: version.Description || '',
             Source: version.Source || '',
             Cuisine: version.Cuisine || '',
@@ -168,11 +306,10 @@ export class DatabaseService {
             PassiveTimeMinutes: version.PassiveTimeMinutes,
             ComplexityRating: version.ComplexityRating,
             MayhemRating: version.MayhemRating,
-            Ingredients: ingredients,
-            PantryIngredients: pantryIngredients,
+            Tags: tagRows.map(tag => tag.TagName),
+            Tables: tables,
             Items: items,
-            Instructions: rawInstructions,
-            Notes: rawNotes.map(n => n.NoteText),
+            Notes: rawNotes.map(note => note.NoteText),
         };
     }
 
@@ -193,14 +330,14 @@ export class DatabaseService {
         const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientID = ?`, ingredientId);
         if (!ingredient) throw new ItemNotFoundException('Ingredient not found');
 
-        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
+        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags
                                        JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
                                        WHERE IngredientTagAssignment.IngredientID = ?`, ingredientId);
 
         return {
             IngredientID: ingredient.IngredientID,
             IngredientName: ingredient.IngredientName,
-            IsRecipe: ingredient.IsRecipe,
+            IsRecipe: !!ingredient.IsRecipe,
             RecipeID: ingredient.RecipeID,
             Tags: tags
         };
@@ -225,14 +362,14 @@ export class DatabaseService {
         const ingredient: IngredientRaw | undefined = await DatabaseService.db.get(`SELECT * FROM Ingredients WHERE IngredientName = ?`, ingredientName);
         if (!ingredient) throw new ItemNotFoundException('Ingredient not found');
 
-        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags 
+        const tags = await DatabaseService.db.all(`SELECT * FROM IngredientTags
                                        JOIN IngredientTagAssignment ON IngredientTags.TagID = IngredientTagAssignment.TagID
                                        WHERE IngredientTagAssignment.IngredientID = ?`, ingredient.IngredientID);
 
         return {
             IngredientID: ingredient.IngredientID,
             IngredientName: ingredient.IngredientName,
-            IsRecipe: ingredient.IsRecipe,
+            IsRecipe: !!ingredient.IsRecipe,
             RecipeID: ingredient.RecipeID,
             Tags: tags
         };
@@ -300,36 +437,6 @@ export class DatabaseService {
 
         const query = `UPDATE RecipeVersions SET ${setters} WHERE RecipeVersionID = ?`;
         await DatabaseService.db.run(query, ...values, versionId);
-    }
-
-    public static async patchRecipeVersionIngredient(recipeVersionIngredientId: number, newIngredientData: Partial<RecipeVersionIngredientRaw>): Promise<void> {
-        const ALLOWED_COLUMNS = ['IngredientID', 'RecipeVersionID', 'Quantity', 'Measurement', 'Prep', 'Sub'];
-        const validKeys = Object.keys(newIngredientData).filter(key => ALLOWED_COLUMNS.includes(key));
-
-        if (!validKeys.length) {
-            throw new Error("No valid columns provided for update.");
-        }
-
-        const setters = validKeys.map(key => `${key} = ?`).join(', ');
-        const values = validKeys.map(key => newIngredientData[key as keyof RecipeVersionIngredientRaw]);
-
-        const query = `UPDATE RecipeVersionIngredients SET ${setters} WHERE RecipeVersionIngredientID = ?`;
-        await DatabaseService.db.run(query, ...values, recipeVersionIngredientId);
-    }
-
-    public static async patchInstruction(instructionId: number, newInstructionData: Partial<InstructionRaw>): Promise<void> {
-        const ALLOWED_COLUMNS = ['RecipeVersionID', 'StepNumber', 'StepDetail'];
-        const validKeys = Object.keys(newInstructionData).filter(key => ALLOWED_COLUMNS.includes(key));
-
-        if (!validKeys.length) {
-            throw new Error("No valid columns provided for update.");
-        }
-
-        const setters = validKeys.map(key => `${key} = ?`).join(', ');
-        const values = validKeys.map(key => newInstructionData[key as keyof InstructionRaw]);
-
-        const query = `UPDATE Instructions SET ${setters} WHERE InstructionID = ?`;
-        await DatabaseService.db.run(query, ...values, instructionId);
     }
 
     public static async patchRecipeVersionItem(recipeVersionItemId: number, newRecipeVersionItemData: Partial<RecipeVersionItemRaw>): Promise<void> {
@@ -403,41 +510,6 @@ export class DatabaseService {
 
         const result = await DatabaseService.db.run(`INSERT INTO Ingredients (IngredientName, IsRecipe, RecipeID) VALUES (?, ?, ?)`, filteredIngredient.IngredientName, filteredIngredient.IsRecipe, filteredIngredient.RecipeID);
         if (!result.lastID) throw new Error('Error inserting ingredient');
-        return result.lastID;
-    }
-
-    public static async insertRecipeVersionIngredient(recipeVersionIngredient: Partial<RecipeVersionIngredientRaw>): Promise<number> {
-        const filteredRecipeVersionIngredient: Partial<RecipeVersionIngredientRaw> = this.filterAllowedColumns(['IngredientID', 'RecipeVersionID', 'Quantity', 'Measurement', 'Prep', 'Sub'], recipeVersionIngredient);
-
-        if (!filteredRecipeVersionIngredient.IngredientID) throw new Error('IngredientID is required');
-        if (!filteredRecipeVersionIngredient.RecipeVersionID) throw new Error('RecipeVersionID is required');
-        if (!filteredRecipeVersionIngredient.Quantity) throw new Error('Quantity is required');
-
-        const result = await DatabaseService.db.run(
-            `INSERT INTO RecipeVersionIngredients (IngredientID, RecipeVersionID, Quantity, Measurement, Prep, Sub) VALUES (?, ?, ?, ?, ?, ?)`,
-            filteredRecipeVersionIngredient.IngredientID,
-            filteredRecipeVersionIngredient.RecipeVersionID,
-            filteredRecipeVersionIngredient.Quantity,
-            filteredRecipeVersionIngredient.Measurement,
-            filteredRecipeVersionIngredient.Prep || null,
-            filteredRecipeVersionIngredient.Sub || null
-        );
-        if (!result.lastID) throw new Error('Error inserting recipe version ingredient');
-        return result.lastID;
-    }
-
-    public static async insertRecipeVersionPantryIngredient(pantryIngredient: Partial<RecipeVersionPantryIngredientRaw>): Promise<number> {
-        const filtered: Partial<RecipeVersionPantryIngredientRaw> = this.filterAllowedColumns(['IngredientID', 'RecipeVersionID'], pantryIngredient);
-
-        if (!filtered.IngredientID) throw new Error('IngredientID is required');
-        if (!filtered.RecipeVersionID) throw new Error('RecipeVersionID is required');
-
-        const result = await DatabaseService.db.run(
-            `INSERT INTO RecipeVersionPantryIngredients (IngredientID, RecipeVersionID) VALUES (?, ?)`,
-            filtered.IngredientID,
-            filtered.RecipeVersionID
-        );
-        if (!result.lastID) throw new Error('Error inserting pantry ingredient');
         return result.lastID;
     }
 
@@ -596,18 +668,6 @@ export class DatabaseService {
         return result.lastID;
     }
 
-    public static async insertInstruction(instruction: Partial<InstructionRaw>): Promise<number> {
-        const filteredInstruction: Partial<InstructionRaw> = this.filterAllowedColumns(['RecipeVersionID', 'StepNumber', 'StepDetail'], instruction);
-
-        if (!filteredInstruction.RecipeVersionID) throw new Error('RecipeVersionID is required');
-        if (!filteredInstruction.StepNumber) throw new Error('StepNumber is required');
-        if (!filteredInstruction.StepDetail) throw new Error('StepDetail is required');
-
-        const result = await DatabaseService.db.run(`INSERT INTO Instructions (RecipeVersionID, StepNumber, StepDetail) VALUES (?, ?, ?)`, filteredInstruction.RecipeVersionID, filteredInstruction.StepNumber, filteredInstruction.StepDetail);
-        if (!result.lastID) throw new Error('Error inserting instruction');
-        return result.lastID;
-    }
-
     public static async insertCart(contents: Array<CartIngredient>): Promise<string> {
         const uuid = uuidv4();
         const result = await DatabaseService.db.run(`INSERT INTO Cart (UUID, Contents) VALUES (?, ?)`, uuid, JSON.stringify(contents));
@@ -620,53 +680,39 @@ export class DatabaseService {
     // Public DELETE methods
     // ************ //
 
-    public static async deleteRecipeVersionIngredient(recipeVersionIngredientID: number): Promise<void> {
-        await DatabaseService.db.run(`DELETE FROM RecipeVersionIngredients WHERE RecipeVersionIngredientID = ?`, recipeVersionIngredientID);
-    }
-
     public static async deleteRecipeVersionItem(recipeVersionItemID: number): Promise<void> {
         await DatabaseService.db.run(`DELETE FROM RecipeVersionItems WHERE RecipeVersionItemID = ?`, recipeVersionItemID);
     }
 
-    public static async deleteInstruction(instructionID: number): Promise<void> {
-        await DatabaseService.db.run(`DELETE FROM Instructions WHERE InstructionID = ?`, instructionID);
-    }
-
-
 
     // Private methods
-    private static async getRecipeIngredient(recipeIngredient: RecipeVersionIngredientRaw): Promise<RecipeIngredient> {
-        try {
-            const ingredient = await DatabaseService.getIngredientById(recipeIngredient.IngredientID);
-            if (!ingredient) throw new Error('Item not found');
+    private static toStageInput(row: StageInputRow, stageKeysById: Map<number, string>): StageInput {
+        if (row.IngredientID !== null) {
             return {
-                RecipeVersionIngredientID: recipeIngredient.RecipeVersionIngredientID,
-                RecipeVersionID: recipeIngredient.RecipeVersionID,
-                Ingredient: ingredient,
-                Quantity: recipeIngredient.Quantity,
-                Measurement: recipeIngredient.Measurement,
-                Prep: recipeIngredient.Prep || undefined,
-                Sub: recipeIngredient.Sub || undefined,
+                Type: 'ingredient',
+                RecipeStageInputID: row.RecipeStageInputID,
+                InputNumber: row.InputNumber,
+                Ingredient: {
+                    IngredientID: row.IngredientID,
+                    IngredientName: row.IngredientName ?? '',
+                    IsRecipe: !!row.IsRecipe,
+                },
+                Quantity: row.Quantity ?? undefined,
+                Measurement: row.Measurement ?? undefined,
+                Hint: row.Hint ?? undefined,
             };
-        } catch (error) {
-            throw new Error('Error getting recipe ingredient', { cause: error });
         }
-    }
-
-    private static async getRecipePantryIngredient(pantryIngredient: RecipeVersionPantryIngredientRaw): Promise<RecipeIngredient> {
-        try {
-            const ingredient = await DatabaseService.getIngredientById(pantryIngredient.IngredientID);
-            if (!ingredient) throw new Error('Item not found');
-            return {
-                RecipeVersionIngredientID: pantryIngredient.RecipeVersionPantryIngredientID,
-                RecipeVersionID: pantryIngredient.RecipeVersionID,
-                Ingredient: ingredient,
-                Quantity: 0,
-                Measurement: '',
-            };
-        } catch (error) {
-            throw new Error('Error getting pantry ingredient', { cause: error });
+        const sourceStageKey = row.SourceRecipeStageID === null ? undefined : stageKeysById.get(row.SourceRecipeStageID);
+        if (!sourceStageKey) {
+            throw new Error(`Stage input ${row.RecipeStageInputID} references an unknown stage`);
         }
+        return {
+            Type: 'stage',
+            RecipeStageInputID: row.RecipeStageInputID,
+            InputNumber: row.InputNumber,
+            SourceStageKey: sourceStageKey,
+            Part: row.Part ?? undefined,
+        };
     }
 
     private static async getRequiredItem(recipeItem: RecipeVersionItemRaw): Promise<RecipeItem> {
@@ -678,6 +724,7 @@ export class DatabaseService {
                 RecipeVersionID: recipeItem.RecipeVersionID,
                 Item: item,
                 Quantity: recipeItem.Quantity,
+                Sub: recipeItem.Sub ?? undefined,
             };
         } catch (error) {
             throw new Error('Error getting recipe item', { cause: error });

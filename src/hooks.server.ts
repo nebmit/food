@@ -39,16 +39,17 @@ async function validateToken(token: string | undefined) {
         return false;
     }
 
-    const response = await fetch(AUTH_URL, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
-
-    if (response.ok) {
-        return true;
+    try {
+        const response = await fetch(AUTH_URL, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.ok;
+    } catch (error) {
+        // An unreachable auth service must not take the whole site down.
+        console.warn(`Could not validate session: ${error}`);
+        return false;
     }
-
-    return false;
 }
 

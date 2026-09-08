@@ -1,53 +1,39 @@
 <script lang="ts">
     import { setToCart } from "$lib/cart";
-    import { parseInstructionScaled } from "$lib/parser";
+    import { layoutRecipe } from "$lib/cookingTable";
+    import { formatMeasure, formatTimes, rating } from "$lib/format";
+    import CookingGrid from "$lib/fragments/cookingGrid.svelte";
+    import { imageFallback } from "$lib/imageFallback";
+    import { aggregateIngredients } from "$lib/recipeIngredients";
     import { pageTitle } from "$lib/stores";
-    import type {
-        Instruction,
-        Recipe,
-        RecipeIngredient,
-        RecipeItem,
-    } from "$lib/types";
+    import type { Recipe } from "$lib/types";
     import { getContext, onDestroy } from "svelte";
     import type { Writable } from "svelte/store";
     import type { User } from "../../../app";
 
     export let data: { recipe: Recipe };
-    const recipe = data.recipe;
-    const recipeVersion = recipe.MainVersion;
 
-    const ingredients: RecipeIngredient[] = recipeVersion.Ingredients;
-    const pantryIngredients: RecipeIngredient[] =
-        recipeVersion.PantryIngredients;
-    const instructions: Instruction[] = recipeVersion.Instructions;
-    const items: RecipeItem[] = recipeVersion.Items;
-    const notes: string[] = recipeVersion.Notes;
-    const description: string = recipeVersion.Description;
-
-    const totalTime =
-        recipeVersion.ActiveTimeMinutes + recipeVersion.PassiveTimeMinutes;
-
-    const imageUrl =
+    $: recipe = data.recipe;
+    $: recipeVersion = recipe.MainVersion;
+    $: layout = layoutRecipe(recipeVersion);
+    $: ingredients = aggregateIngredients(recipeVersion);
+    $: stepCount = layout.steps.length;
+    $: imageUrl =
         "/images/recipes/" + encodeURIComponent(recipe.RecipeName) + ".webp";
 
-    pageTitle.set(recipe.RecipeName);
+    $: pageTitle.set(recipe.RecipeName);
     onDestroy(() => pageTitle.set(null));
 
     const userStore = getContext<Writable<User>>("user");
-
     let user: User;
     userStore.subscribe((value: User) => {
         user = value;
     });
 
-    let selectedPortion = recipeVersion.PortionQuantity;
-    $: selectedPortion = Math.max(Math.min(selectedPortion, 99), 1);
+    // Servings
+    let selectedPortion = 1;
+    $: selectedPortion = recipeVersion.PortionQuantity;
     $: scalingFactor = selectedPortion / recipeVersion.PortionQuantity;
-
-    function formatQuantity(quantity: number, factor: number): string {
-        const scaled = quantity * factor;
-        return scaled % 1 === 0 ? scaled.toFixed(0) : scaled.toFixed(1);
-    }
 
     function incrementPortion() {
         if (selectedPortion < 99) selectedPortion++;
@@ -56,334 +42,430 @@
     function decrementPortion() {
         if (selectedPortion > 1) selectedPortion--;
     }
+
+    // Cook mode: one block at a time, in document order.
+    let cooking = false;
+    let step = 0;
+    $: if (recipe) {
+        cooking = false;
+        step = 0;
+    }
+
+    function toggleCook() {
+        cooking = !cooking;
+        step = cooking ? 1 : 0;
+    }
+
+    function prevStep() {
+        step = Math.max(1, step - 1);
+        cooking = true;
+    }
+
+    function nextStep() {
+        step = Math.min(stepCount, (step || 0) + 1);
+        cooking = true;
+    }
+
+    function pick(event: CustomEvent<number>) {
+        cooking = true;
+        step = event.detail;
+    }
+
+    function startCooking() {
+        cooking = true;
+        step = 1;
+        document
+            .getElementById("map")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    $: cookLabel = cooking ? "Exit cook mode" : "Cook mode";
+    $: cookHint = cooking
+        ? "Orange rows go in now."
+        : "Step through one block at a time.";
+    $: stepLabel = cooking ? `Step ${step} / ${stepCount}` : `— / ${stepCount}`;
+
+    function ingredientAmount(entry: (typeof ingredients)[number]): string {
+        if (entry.quantity !== undefined && entry.measurement !== undefined) {
+            return formatMeasure(entry.quantity, entry.measurement, scalingFactor);
+        }
+        return entry.hints.join("; ");
+    }
 </script>
 
-<div class="recipe-page bg-white flex-1">
-    <!-- Hero Image -->
-    <div class="relative h-56 sm:h-64 md:h-72 lg:h-80">
-        <img
-            class="absolute inset-0 w-full h-full object-cover"
-            src={imageUrl}
-            alt={recipe.RecipeName}
-        />
-        <div
-            class="absolute inset-0"
-            style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.05) 100%);"
-        ></div>
-
-        <!-- Title overlay -->
-        <div class="absolute inset-0 flex items-end">
-            <div class="w-full max-w-5xl mx-auto px-5 pb-5 md:px-8 md:pb-6">
-                <h1
-                    class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight"
-                >
-                    {recipe.RecipeName}
-                </h1>
-            </div>
-        </div>
-
-        <!-- Add to Cart Button -->
-        {#if user.isAuthenticated}
-            <button
-                class="absolute top-4 right-4 md:right-6 flex items-center gap-1.5 px-3.5 py-2 bg-white/95 text-gray-800 font-medium rounded-lg text-sm shadow-xs hover:bg-white active:scale-95 transition-all duration-150"
-                on:click={() => setToCart(recipe, selectedPortion)}
-            >
-                <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 4v16m8-8H4"
-                    />
-                </svg>
-                add to list
-            </button>
-        {/if}
-    </div>
-
-    <!-- Content -->
-    <div class="max-w-5xl mx-auto px-5 md:px-8">
-        <!-- Meta Strip -->
-        <div
-            class="flex items-center flex-wrap gap-x-4 gap-y-2 py-4 text-sm text-gray-500 border-b border-gray-100"
-        >
-            <div class="flex items-center gap-1.5">
-                <svg
-                    class="w-4 h-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"
-                    />
-                </svg>
-                <span>{totalTime} min</span>
-                {#if recipeVersion.PassiveTimeMinutes > 0}
-                    <span class="text-gray-300">
-                        ({recipeVersion.ActiveTimeMinutes} active)
-                    </span>
-                {/if}
-            </div>
-
-            {#if recipeVersion.ComplexityRating || recipeVersion.MayhemRating}
-                <div class="flex items-center gap-4">
-                    {#if recipeVersion.ComplexityRating}
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-gray-400">complexity</span>
-                            <div class="flex gap-0.5">
-                                {#each Array(5).keys() as i (i)}
-                                    <div
-                                        class="w-2 h-2 rounded-full {i <
-                                        recipeVersion.ComplexityRating
-                                            ? 'bg-amber-400'
-                                            : 'bg-gray-200'}"
-                                    ></div>
-                                {/each}
-                            </div>
-                        </div>
-                    {/if}
-                    {#if recipeVersion.MayhemRating}
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-gray-400">mayhem</span>
-                            <div class="flex gap-0.5">
-                                {#each Array(5).keys() as i (i)}
-                                    <div
-                                        class="w-2 h-2 rounded-full {i <
-                                        recipeVersion.MayhemRating
-                                            ? 'bg-red-400'
-                                            : 'bg-gray-200'}"
-                                    ></div>
-                                {/each}
-                            </div>
-                        </div>
-                    {/if}
-                </div>
+<!-- ===================== Desktop ===================== -->
+<div class="hidden md:block flex-1">
+    <!-- Title block -->
+    <div
+        class="px-10 pt-[26px] pb-5 grid grid-cols-[1fr_auto] gap-10 items-end border-b border-rule"
+    >
+        <div>
+            <h1 class="text-[40px] leading-none tracking-[-.03em] font-bold mb-2.5">
+                {recipe.RecipeName}
+            </h1>
+            {#if recipeVersion.Description}
+                <p class="text-[15px] leading-[1.45] text-body max-w-[60ch] mb-3">
+                    {recipeVersion.Description}
+                </p>
             {/if}
-        </div>
-
-        {#if description}
-            <p class="text-gray-500 text-sm leading-relaxed pt-4">
-                {description}
-            </p>
-        {/if}
-
-        <!-- Portion Selector -->
-        <div class="flex items-center gap-3 py-5">
-            <span
-                class="text-xs font-medium text-gray-500 uppercase tracking-wide"
+            <div
+                class="flex flex-wrap gap-x-5 gap-y-1.5 font-mono text-[10px] leading-none tracking-[.1em] uppercase text-muted-3"
             >
-                servings
-            </span>
-            <div class="flex items-center">
+                {#if recipeVersion.Cuisine}<span>{recipeVersion.Cuisine}</span>{/if}
+                {#if recipeVersion.Source}<span>{recipeVersion.Source}</span>{/if}
+                <span>{formatTimes(recipeVersion)}</span>
+                <span
+                    >Complexity <span class="text-ink tracking-[.18em]"
+                        >{rating(recipeVersion.ComplexityRating)}</span
+                    ></span
+                >
+                <span
+                    >Mayhem <span class="text-ink tracking-[.18em]"
+                        >{rating(recipeVersion.MayhemRating)}</span
+                    ></span
+                >
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3"
+                >Servings</span
+            >
+            <div class="flex items-center border border-ink">
                 <button
                     on:click={decrementPortion}
-                    class="w-9 h-9 flex items-center justify-center rounded-l-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors select-none"
-                    aria-label="Decrease servings"
+                    class="w-8 h-8 border-r border-ink bg-white text-base hover:bg-hover"
+                    aria-label="Decrease servings">−</button
                 >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M20 12H4"
-                        />
-                    </svg>
-                </button>
-                <input
-                    bind:value={selectedPortion}
-                    type="number"
-                    class="w-12 h-9 text-center text-sm font-semibold text-gray-800 border-y border-gray-200 bg-white focus:outline-hidden appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    min="1"
-                    max="99"
-                />
+                <div
+                    class="w-[46px] h-8 flex items-center justify-center text-[15px] font-bold tabular-nums"
+                >
+                    {selectedPortion}
+                </div>
                 <button
                     on:click={incrementPortion}
-                    class="w-9 h-9 flex items-center justify-center rounded-r-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors select-none"
-                    aria-label="Increase servings"
+                    class="w-8 h-8 border-l border-ink bg-white text-base hover:bg-hover"
+                    aria-label="Increase servings">+</button
                 >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 4v16m8-8H4"
-                        />
-                    </svg>
+            </div>
+            {#if user.isAuthenticated}
+                <button
+                    on:click={() => setToCart(recipe, selectedPortion)}
+                    class="border border-ink bg-white font-mono text-[10px] leading-none tracking-[.14em] uppercase px-3.5 py-[11px] hover:bg-accent hover:border-accent hover:text-white"
+                >
+                    Add to groceries
                 </button>
-            </div>
-            <span class="text-sm text-gray-500">
-                {recipeVersion.PortionDescriptor}
-            </span>
+            {/if}
         </div>
+    </div>
 
-        <!-- Two-column grid on large screens -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 lg:gap-12">
-            <!-- Sidebar: Ingredients, Pantry, Equipment -->
-            <div class="lg:col-span-4">
-                <!-- Ingredients -->
-                <section class="pb-8">
-                    <h2
-                        class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
-                    >
-                        ingredients
-                    </h2>
-                    <ul class="divide-y divide-gray-100">
-                        {#each ingredients as ingredient (ingredient.RecipeVersionIngredientID)}
-                            <li
-                                class="flex justify-between items-baseline py-2.5"
-                            >
-                                <div class="flex flex-col min-w-0 pr-4">
-                                    <span class="text-gray-800">
-                                        {ingredient.Ingredient.IngredientName}
-                                    </span>
-                                    {#if ingredient.Prep}
-                                        <span
-                                            class="text-xs text-gray-400 mt-0.5"
-                                        >
-                                            {ingredient.Prep}
-                                        </span>
-                                    {/if}
-                                    {#if ingredient.Sub}
-                                        <span
-                                            class="text-xs text-gray-400 italic mt-0.5"
-                                        >
-                                            {ingredient.Sub}
-                                        </span>
-                                    {/if}
-                                </div>
-                                <span
-                                    class="text-sm text-gray-500 font-medium whitespace-nowrap tabular-nums"
-                                >
-                                    {formatQuantity(
-                                        ingredient.Quantity,
-                                        scalingFactor,
-                                    )}
-                                    {ingredient.Measurement || ""}
-                                </span>
-                            </li>
-                        {/each}
-                    </ul>
+    <!-- Cook-mode bar -->
+    <div
+        class="px-10 py-3 flex items-center justify-between border-b border-rule bg-paper"
+    >
+        <div class="flex items-center gap-3.5">
+            <button
+                on:click={toggleCook}
+                class="border border-ink bg-ink text-white font-mono text-[10px] leading-none tracking-[.14em] uppercase px-3.5 py-[11px] hover:bg-accent hover:border-accent"
+            >
+                {cookLabel}
+            </button>
+            <span class="text-[13px] text-muted">{cookHint}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button
+                on:click={prevStep}
+                class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
+                aria-label="Previous step">←</button
+            >
+            <span
+                class="font-mono text-[10px] leading-none tracking-[.1em] text-muted min-w-[72px] text-center"
+                >{stepLabel}</span
+            >
+            <button
+                on:click={nextStep}
+                class="border border-ink bg-white text-[13px] w-8 h-8 hover:bg-hover"
+                aria-label="Next step">→</button
+            >
+        </div>
+    </div>
 
-                    <!-- Pantry Staples -->
-                    {#if pantryIngredients.length > 0}
-                        <div class="mt-5">
-                            <h3
-                                class="text-xs font-medium text-gray-500 tracking-tight mb-2"
-                            >
-                                pantry staples
-                            </h3>
-                            <div class="flex flex-wrap gap-1.5">
-                                {#each pantryIngredients as pantry (pantry.RecipeVersionIngredientID)}
-                                    <span
-                                        class="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full"
-                                    >
-                                        {pantry.Ingredient.IngredientName}
-                                    </span>
-                                {/each}
-                            </div>
-                        </div>
-                    {/if}
-                </section>
+    <!-- The grid -->
+    <div class="px-10 pt-[30px] pb-[34px] overflow-x-auto">
+        <CookingGrid
+            {layout}
+            {recipe}
+            {scalingFactor}
+            servings={selectedPortion}
+            {cooking}
+            activeStep={step}
+            on:pick={pick}
+        />
+    </div>
 
-                <!-- Equipment -->
-                {#if items.length > 0}
-                    <section class="pb-8">
-                        <h2
-                            class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
-                        >
-                            equipment
-                        </h2>
-                        <div class="flex flex-wrap gap-2">
-                            {#each items as item (item.RecipeVersionItemID)}
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-full"
-                                >
-                                    {item.Item.ItemName}
-                                    {#if item.Quantity > 1}
-                                        <span class="text-gray-400 text-xs"
-                                            >×{item.Quantity}</span
-                                        >
-                                    {/if}
-                                </span>
-                            {/each}
-                        </div>
-                    </section>
-                {/if}
+    <!-- Equipment · Ingredients · Notes -->
+    <div class="grid grid-cols-[1fr_1fr_1.4fr] border-t border-ink">
+        <div class="pt-[22px] pb-7 pl-10 pr-8">
+            <h3
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3 mb-3"
+            >
+                Equipment
+            </h3>
+            <div class="flex flex-col gap-1.5 text-sm text-text-2">
+                {#each recipeVersion.Items as item (item.RecipeVersionItemID)}
+                    <span>
+                        {item.Item.ItemName}
+                        {#if item.Quantity > 1}<span class="text-muted-2"
+                                >×{item.Quantity}</span
+                            >{/if}
+                        {#if item.Sub}<span class="text-muted-2">{item.Sub}</span
+                            >{/if}
+                    </span>
+                {:else}
+                    <span class="text-muted-2">—</span>
+                {/each}
             </div>
-
-            <!-- Main: Instructions, Notes -->
-            <div class="lg:col-span-8">
-                <!-- Instructions -->
-                <section class="pb-8">
-                    <h2
-                        class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
-                    >
-                        instructions
-                    </h2>
-                    <ol class="space-y-5">
-                        {#each instructions as instruction (instruction.InstructionID)}
-                            <li class="flex gap-4">
-                                <span
-                                    class="shrink-0 w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-sm font-bold"
-                                >
-                                    {instruction.StepNumber}
-                                </span>
-                                <p
-                                    class="flex-1 text-gray-700 leading-relaxed pt-1"
-                                >
-                                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                                    {@html parseInstructionScaled(
-                                        instruction.StepDetail,
-                                        ingredients,
-                                        scalingFactor,
-                                    )}
-                                </p>
-                            </li>
-                        {/each}
-                    </ol>
-                </section>
-
-                <!-- Notes -->
-                {#if notes.length > 0}
-                    <section class="pb-10">
-                        <h2
-                            class="text-sm font-semibold text-gray-800 tracking-tight mb-4"
+        </div>
+        <div class="pt-[22px] pb-7 pr-8">
+            <h3
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3 mb-3"
+            >
+                Ingredients
+            </h3>
+            <div class="flex flex-col gap-1.5 text-sm text-text-2">
+                {#each ingredients as entry (entry.ingredient.IngredientName + (entry.measurement ?? ""))}
+                    <span>
+                        {entry.ingredient.IngredientName}
+                        <span class="text-muted-2 tabular-nums"
+                            >{ingredientAmount(entry)}</span
                         >
-                            notes
-                        </h2>
-                        <div class="space-y-3">
-                            {#each notes as noteText, noteIndex (noteIndex)}
-                                <div class="pl-4 border-l-2 border-gray-200">
-                                    <p
-                                        class="text-gray-600 text-sm leading-relaxed"
-                                    >
-                                        {noteText}
-                                    </p>
-                                </div>
-                            {/each}
-                        </div>
-                    </section>
-                {/if}
+                    </span>
+                {/each}
+            </div>
+        </div>
+        <div class="pt-[22px] pb-7 pr-10">
+            <h3
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3 mb-3"
+            >
+                Notes
+            </h3>
+            <div
+                class="flex flex-col gap-2 text-sm leading-[1.45] text-text-2 max-w-[56ch]"
+            >
+                {#each recipeVersion.Notes as note, index (index)}
+                    <span>{note}</span>
+                {:else}
+                    <span class="text-muted-2">—</span>
+                {/each}
             </div>
         </div>
     </div>
+</div>
+
+<!-- ===================== Mobile ===================== -->
+<div class="md:hidden flex-1 pb-24">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-ink">
+        <a href="/" class="font-mono text-[11px] leading-none tracking-[.1em] uppercase"
+            >← Index</a
+        >
+        <span class="font-mono text-[10px] leading-none tracking-[.1em] text-muted-3"
+            >recipe.yaml</span
+        >
+    </div>
+
+    <img
+        src={imageUrl}
+        alt={recipe.RecipeName}
+        class="w-full h-[172px] object-cover block bg-canvas"
+        use:imageFallback
+    />
+
+    <div class="px-5 pt-[18px] pb-4 border-b border-ink">
+        <h1 class="text-[28px] leading-[1.02] tracking-[-.03em] font-bold mb-2">
+            {recipe.RecipeName}
+        </h1>
+        {#if recipeVersion.Description}
+            <p class="text-[15px] leading-[1.45] text-body mb-3">
+                {recipeVersion.Description}
+            </p>
+        {/if}
+        <div
+            class="flex flex-wrap gap-x-4 gap-y-1.5 font-mono text-[10px] leading-[1.4] tracking-[.1em] uppercase text-muted-3"
+        >
+            {#if recipeVersion.Cuisine}<span>{recipeVersion.Cuisine}</span>{/if}
+            <span>{formatTimes(recipeVersion)}</span>
+            <span>{stepCount} steps</span>
+            <span
+                >Complexity <span class="text-ink tracking-[.18em]"
+                    >{rating(recipeVersion.ComplexityRating)}</span
+                ></span
+            >
+            <span
+                >Mayhem <span class="text-ink tracking-[.18em]"
+                    >{rating(recipeVersion.MayhemRating)}</span
+                ></span
+            >
+        </div>
+    </div>
+
+    <div
+        class="px-5 py-3.5 flex items-center justify-between border-b border-ink bg-paper"
+    >
+        <span
+            class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted"
+            >Servings</span
+        >
+        <div class="flex items-center border border-ink">
+            <button
+                on:click={decrementPortion}
+                class="w-12 h-11 border-r border-ink bg-white text-[19px]"
+                aria-label="Decrease servings">−</button
+            >
+            <div
+                class="w-[52px] h-11 flex items-center justify-center text-[17px] font-bold tabular-nums"
+            >
+                {selectedPortion}
+            </div>
+            <button
+                on:click={incrementPortion}
+                class="w-12 h-11 border-l border-ink bg-white text-[19px]"
+                aria-label="Increase servings">+</button
+            >
+        </div>
+    </div>
+    {#if user.isAuthenticated}
+        <div class="px-5 pt-3">
+            <button
+                on:click={() => setToCart(recipe, selectedPortion)}
+                class="w-full h-11 border border-ink bg-white font-mono text-[11px] tracking-[.14em] uppercase"
+            >
+                Add to groceries
+            </button>
+        </div>
+    {/if}
+
+    <div class="px-5 pt-[18px] pb-1 flex items-baseline justify-between">
+        <h2
+            class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3"
+        >
+            Ingredients
+        </h2>
+    </div>
+    <div class="px-5 pt-2.5 pb-1 flex flex-col">
+        {#each ingredients as entry (entry.ingredient.IngredientName + (entry.measurement ?? ""))}
+            <div
+                class="grid grid-cols-[1fr_auto] gap-3 items-center min-h-12 border-b border-rule"
+            >
+                <span class="flex flex-col gap-0.5 min-w-0">
+                    <span class="text-[15px] leading-[1.2]"
+                        >{entry.ingredient.IngredientName}</span
+                    >
+                    {#if entry.quantity !== undefined && entry.hints.length}
+                        <span class="text-[11px] text-muted-2"
+                            >{entry.hints.join("; ")}</span
+                        >
+                    {/if}
+                </span>
+                <span class="text-sm text-muted tabular-nums whitespace-nowrap"
+                    >{ingredientAmount(entry)}</span
+                >
+            </div>
+        {/each}
+    </div>
+
+    <div class="px-5 pt-5 pb-1 flex items-baseline justify-between" id="map">
+        <h2
+            class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3"
+        >
+            The map
+        </h2>
+        <span class="font-mono text-[10px] leading-none text-muted-4">swipe →</span>
+    </div>
+    <div class="pl-5 pt-2.5 overflow-x-auto">
+        <div class="min-w-[640px] pr-5">
+            <CookingGrid
+                {layout}
+                {recipe}
+                {scalingFactor}
+                servings={selectedPortion}
+                {cooking}
+                activeStep={step}
+                compact
+                on:pick={pick}
+            />
+        </div>
+    </div>
+
+    {#if recipeVersion.Items.length}
+        <div class="px-5 pt-6">
+            <h2
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3 mb-3"
+            >
+                Equipment
+            </h2>
+            <div class="flex flex-col gap-1.5 text-sm text-text-2">
+                {#each recipeVersion.Items as item (item.RecipeVersionItemID)}
+                    <span>
+                        {item.Item.ItemName}
+                        {#if item.Quantity > 1}<span class="text-muted-2"
+                                >×{item.Quantity}</span
+                            >{/if}
+                        {#if item.Sub}<span class="text-muted-2">{item.Sub}</span
+                            >{/if}
+                    </span>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    {#if recipeVersion.Notes.length}
+        <div class="px-5 pt-6">
+            <h2
+                class="font-mono text-[10px] leading-none tracking-[.14em] uppercase text-muted-3 mb-3"
+            >
+                Notes
+            </h2>
+            <div class="flex flex-col gap-2 text-sm leading-[1.45] text-text-2">
+                {#each recipeVersion.Notes as note, index (index)}
+                    <span>{note}</span>
+                {/each}
+            </div>
+        </div>
+    {/if}
+</div>
+
+<!-- Mobile sticky action bar -->
+<div
+    class="md:hidden fixed inset-x-0 bottom-0 bg-white border-t border-ink px-5 pt-3 pb-5 z-30"
+>
+    {#if !cooking}
+        <button
+            on:click={startCooking}
+            class="w-full h-[54px] border border-ink bg-ink text-white font-mono text-xs tracking-[.16em] uppercase"
+        >
+            Start cooking · {stepCount} steps
+        </button>
+    {:else}
+        <div class="grid grid-cols-[56px_1fr_56px_auto] gap-2 items-center">
+            <button
+                on:click={prevStep}
+                class="h-12 border border-ink bg-white text-[15px]"
+                aria-label="Previous step">←</button
+            >
+            <span
+                class="text-center font-mono text-[11px] tracking-[.1em] text-muted"
+                >{stepLabel}</span
+            >
+            <button
+                on:click={nextStep}
+                class="h-12 border border-ink bg-white text-[15px]"
+                aria-label="Next step">→</button
+            >
+            <button
+                on:click={toggleCook}
+                class="h-12 px-3 border border-ink bg-ink text-white font-mono text-[10px] tracking-[.12em] uppercase"
+                >Exit</button
+            >
+        </div>
+    {/if}
 </div>

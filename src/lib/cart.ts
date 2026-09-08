@@ -1,6 +1,8 @@
+import { aggregateIngredients } from "./recipeIngredients";
 import type { CartIngredient, Recipe } from "./types";
 
-const CART_KEY = 'CART';
+// The v2 read model changed the stored recipe shape; older entries are ignored.
+const CART_KEY = 'CART_V2';
 const MERGE_RULES_KEY = 'MERGE_RULES';
 
 /**
@@ -17,8 +19,14 @@ type Pair = {
 };
 
 function getCart(): Pair[] {
-    const cart = localStorage.getItem(CART_KEY);
-    return cart ? JSON.parse(cart) : [];
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return [];
+    try {
+        const cart: Pair[] = JSON.parse(raw);
+        return cart.filter(item => Array.isArray(item?.recipe?.MainVersion?.Tables));
+    } catch {
+        return [];
+    }
 }
 
 function setCart(cart: Pair[]) {
@@ -92,6 +100,11 @@ function resolveIngredientName(name: string, rules: MergeRules): string {
 
 // --- Shopping list ---
 
+/**
+ * Every ingredient input of every recipe in the cart, scaled to the chosen
+ * servings and summed by name and measurement. Qualitative amounts ("to taste")
+ * land on the list with quantity 0 and no measurement.
+ */
 function getCartIngredients(): CartIngredient[] {
     const cart = getCart();
     const rules = getMergeRules();
@@ -99,26 +112,25 @@ function getCartIngredients(): CartIngredient[] {
     const ingredientMap: Record<string, CartIngredient> = {};
 
     cart.forEach(recipePair => {
-        const multiplier = recipePair.quantity / recipePair.recipe.MainVersion.PortionQuantity;
-        recipePair.recipe.MainVersion.Ingredients.forEach(recipeIngredient => {
-            if (recipeIngredient.Ingredient.IsRecipe) return;
+        const version = recipePair.recipe.MainVersion;
+        const multiplier = recipePair.quantity / version.PortionQuantity;
 
-            const rawName = recipeIngredient.Ingredient.IngredientName;
-            const resolvedName = resolveIngredientName(rawName, rules);
-            const quantity = recipeIngredient.Quantity;
-            const measurement = recipeIngredient.Measurement;
+        for (const entry of aggregateIngredients(version, { includeRecipeIngredients: false })) {
+            const resolvedName = resolveIngredientName(entry.ingredient.IngredientName, rules);
+            const measurement = entry.measurement ?? '';
+            const quantity = entry.quantity === undefined ? 0 : entry.quantity * multiplier;
             const key = `${resolvedName.toLowerCase()}-${measurement}`;
 
             if (ingredientMap[key]) {
-                ingredientMap[key].quantity += quantity * multiplier;
+                ingredientMap[key].quantity += quantity;
             } else {
                 ingredientMap[key] = {
-                    ingredient: { ...recipeIngredient.Ingredient, IngredientName: resolvedName },
-                    quantity: quantity * multiplier,
-                    measurement: measurement,
+                    ingredient: { ...entry.ingredient, IngredientName: resolvedName },
+                    quantity,
+                    measurement,
                 };
             }
-        });
+        }
     });
 
     return Object.values(ingredientMap);

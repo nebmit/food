@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS Ingredients (
     FOREIGN KEY (RecipeID) REFERENCES Recipes(RecipeID)
 );
 
--- Normalized Cookbook for Engineers flow.
+-- Cooking-for-Engineers flow: ordered tables of stages, each stage consuming
+-- ingredient inputs and earlier stages. The grid layout is computed at render
+-- time (src/lib/cookingTable.ts); no row, column or span is stored.
 CREATE TABLE IF NOT EXISTS RecipeVersionTables (
     RecipeVersionTableID INTEGER PRIMARY KEY,
     RecipeVersionID INTEGER NOT NULL,
@@ -128,36 +130,6 @@ CREATE TABLE IF NOT EXISTS RecipeVersionItems (
     UNIQUE (RecipeVersionID, ItemNumber),
     FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID) ON DELETE CASCADE,
     FOREIGN KEY (ItemID) REFERENCES Items(ItemID)
-);
-
--- Legacy flat tables remain available to the unchanged read model. Schema-v2
--- ingestion deliberately leaves them empty.
-CREATE TABLE IF NOT EXISTS RecipeVersionIngredients (
-    RecipeVersionIngredientID INTEGER PRIMARY KEY,
-    RecipeVersionID INTEGER NOT NULL,
-    IngredientID INTEGER NOT NULL,
-    Quantity REAL NOT NULL,
-    Measurement TEXT NOT NULL DEFAULT 'unit',
-    Prep TEXT,
-    Sub TEXT,
-    FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID) ON DELETE CASCADE,
-    FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
-);
-
-CREATE TABLE IF NOT EXISTS RecipeVersionPantryIngredients (
-    RecipeVersionPantryIngredientID INTEGER PRIMARY KEY,
-    RecipeVersionID INTEGER NOT NULL,
-    IngredientID INTEGER NOT NULL,
-    FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID) ON DELETE CASCADE,
-    FOREIGN KEY (IngredientID) REFERENCES Ingredients(IngredientID)
-);
-
-CREATE TABLE IF NOT EXISTS Instructions (
-    InstructionID INTEGER PRIMARY KEY,
-    RecipeVersionID INTEGER NOT NULL,
-    StepNumber INTEGER NOT NULL,
-    StepDetail TEXT NOT NULL,
-    FOREIGN KEY (RecipeVersionID) REFERENCES RecipeVersions(RecipeVersionID) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS IngredientTags (

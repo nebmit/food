@@ -3,6 +3,7 @@ import { packageUpSync } from 'package-up';
 import path from 'path';
 import sharp from 'sharp';
 import { simpleGit } from 'simple-git';
+import { ParsingException, type DataInfo } from '../types';
 import { DatabaseService } from './databaseService';
 import { insertParsedRecipe, parseRecipeFile } from './recipeService';
 
@@ -26,6 +27,36 @@ const projectRoot = path.dirname(packageUpSync() || '/');
 const localPath = path.join(projectRoot, 'data');
 const schemaPath = path.join(projectRoot, 'db_schema.sql');
 
+const repoLabel = (() => {
+    const match = repoUrl.match(/([^/:]+\/[^/]+?)(?:\.git)?\/?$/);
+    return match ? match[1] : repoUrl;
+})();
+
+let cachedDataInfo: DataInfo | null = null;
+
+async function readDataInfo(): Promise<DataInfo> {
+    if (!fs.existsSync(localPath)) {
+        return { revision: null, branch: null, repoLabel };
+    }
+    const repo = git.cwd(localPath);
+    const revision = (await repo.revparse(['--short', 'HEAD'])).trim();
+    const branch = (await repo.revparse(['--abbrev-ref', 'HEAD'])).trim();
+    return { revision, branch, repoLabel };
+}
+
+/**
+ * Revision and branch of the cloned data repository, for the page footer.
+ * Cached; refreshed on every seed.
+ */
+export async function getDataInfo(): Promise<DataInfo> {
+    if (!cachedDataInfo) {
+        cachedDataInfo = await readDataInfo().catch(error => {
+            console.warn(`Could not read data repository info: ${error}`);
+            return { revision: null, branch: null, repoLabel };
+        });
+    }
+    return cachedDataInfo;
+}
 
 async function update() {
     // Check if the directory exists
@@ -51,20 +82,24 @@ function getRecipeFiles(): Array<{ name: string, instructionPath: string, imageP
     const elements = fs.readdirSync(recipesPath);
     for (const element of elements) {
         const recipePath = path.join(recipesPath, element);
-        if (fs.lstatSync(recipePath).isDirectory()) {
-            const instructionPath = path.join(recipePath, 'recipe.yaml');
-            const imagePath = path.join(recipePath, 'image.webp');
+        if (!fs.lstatSync(recipePath).isDirectory()) continue;
 
-            if (!fs.existsSync(imagePath) || !fs.existsSync(instructionPath)) {
-                continue;
-            }
+        const entries = fs.readdirSync(recipePath);
+        const instructionFile = entries.find(entry => entry === 'recipe.yaml');
+        // The corpus is not consistent about the extension's case (image.WEBP exists).
+        const imageFile = entries.find(entry => /^image\.webp$/i.test(entry));
 
-            array.push({
-                name: element,
-                instructionPath: instructionPath,
-                imagePath: imagePath
-            });
+        if (!instructionFile || !imageFile) {
+            const reason = !instructionFile ? 'no recipe.yaml' : 'no image.webp';
+            console.warn(`Skipping recipes/${element}: ${reason}`);
+            continue;
         }
+
+        array.push({
+            name: element,
+            instructionPath: path.join(recipePath, instructionFile),
+            imagePath: path.join(recipePath, imageFile)
+        });
     }
 
     return array;
@@ -74,11 +109,20 @@ export async function updateDatabase() {
     // Pull the latest data
     await update();
 
+    // Parse everything before touching the database, so a malformed recipe
+    // aborts before the old data is dropped. Name the culprit.
     const rawRecipes = getRecipeFiles();
-    const parsedRecipes = rawRecipes.map(rawRecipe => ({
-        name: rawRecipe.name,
-        recipe: parseRecipeFile(rawRecipe.instructionPath),
-    }));
+    const parsedRecipes = rawRecipes.map(rawRecipe => {
+        try {
+            return {
+                name: rawRecipe.name,
+                recipe: parseRecipeFile(rawRecipe.instructionPath),
+            };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new ParsingException(`${rawRecipe.name}: ${message}`);
+        }
+    });
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
     await DatabaseService.runInTransaction(async () => {
@@ -106,6 +150,8 @@ export async function updateDatabase() {
             .toFile(targetImagePath);
     }
 
-    // Refresh the ingredient name cache after seeding
+    // Refresh the caches after seeding
     cachedIngredientNames = await DatabaseService.getAllIngredientNames();
+    cachedDataInfo = null;
+    await getDataInfo();
 }

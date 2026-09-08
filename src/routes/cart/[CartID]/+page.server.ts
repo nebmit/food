@@ -8,7 +8,9 @@ export const load = async ({ params }) => {
     try {
         const cart = await DatabaseService.getCartByUUID(CartID);
         return {
-            cart
+            cart,
+            crumb: "shopping list",
+            footerNote: "shared list · expires after a week",
         };
     } catch (e) {
         if (e instanceof ItemNotFoundException) {

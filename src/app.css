@@ -1,19 +1,30 @@
 @import "tailwindcss";
 
-
+/* Design tokens from the "Food - Redesign" handoff: a datasheet, not a magazine. */
 @theme {
-    --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
-}
+    --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, Menlo, monospace;
 
-@font-face {
-    font-family: 'Montserrat';
-    src: url('/fonts/Montserrat-VariableFont_wght.ttf') format('truetype');
-}
-
-:root {
-    --bg-color: #fff;
-    --text-color: #18181b
+    --color-ink: #141412;
+    --color-accent: #c2410c;
+    --color-accent-deep: #a8380a;
+    --color-body: #4a4844;
+    --color-text-2: #3d3b37;
+    --color-muted: #6e6c66;
+    --color-muted-2: #8f8d87;
+    --color-muted-3: #9b9992;
+    --color-muted-4: #a5a39c;
+    --color-rule: #e2e0da;
+    --color-paper: #faf9f6;
+    --color-hover: #f2f0ec;
+    --color-row-hover: #f7f5f1;
+    --color-tint-1: #f7f6f3;
+    --color-tint-2: #f4f2ef;
+    --color-tint-3: #f0eeea;
+    --color-tint-4: #ebe9e4;
+    --color-carry: #c9c7c0;
+    --color-carry-dash: #b9b7b0;
+    --color-canvas: #e8e7e3;
 }
 
 html,
@@ -24,6 +35,12 @@ body {
 }
 
 body {
-    color: var(--text-color);
+    background: #fff;
+    color: var(--color-ink);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+input::placeholder {
+    color: #a2a09a;
 }

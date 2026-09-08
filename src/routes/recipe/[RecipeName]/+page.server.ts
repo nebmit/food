@@ -7,7 +7,9 @@ export async function load({ params }) {
         const recipeName = decodeURIComponent(params.RecipeName);
         const recipe: Recipe = await DatabaseService.getRecipeByName(recipeName);
         return {
-            recipe
+            recipe,
+            crumb: `recipes / ${recipe.RecipeName}`,
+            footerNote: `recipes/${recipe.RecipeName}/recipe.yaml`,
         };
     } catch {
         throw error(404, 'Recipe not found');

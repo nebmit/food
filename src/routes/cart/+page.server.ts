@@ -2,6 +2,10 @@ import { DatabaseService } from "$lib/server/databaseService";
 import type { CartIngredient } from "$lib/types";
 import { fail } from "@sveltejs/kit";
 
+export function load() {
+    return { crumb: "groceries" };
+}
+
 export const actions = {
     createCart: async ({ request }) => {
         const data = await request.formData();

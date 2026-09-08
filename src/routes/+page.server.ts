@@ -1,17 +1,12 @@
 import { DatabaseService } from "$lib/server/databaseService";
-import type { Recipe } from "$lib/types";
+import type { RecipeSummary } from "$lib/types";
 
 export async function load() {
     try {
-        const randomRecipes: Recipe[] = await DatabaseService.getRandomRecipes(3);
-        return {
-            randomRecipes
-        };
+        const summaries: RecipeSummary[] = await DatabaseService.getRecipeSummaries();
+        return { summaries };
     } catch (error) {
-        console.error("Error in load function:", error);
-        return {
-            status: 500,
-            error: "Internal server error",
-        };
+        console.error("Error loading recipe summaries:", error);
+        return { summaries: [] as RecipeSummary[] };
     }
 }

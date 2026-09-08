@@ -16,8 +16,8 @@ export interface RecipeVersionRaw {
     PortionDescriptor: string;
     ActiveTimeMinutes: number;
     PassiveTimeMinutes: number;
-    ComplexityRating?: number;
-    MayhemRating?: number;
+    ComplexityRating: number;
+    MayhemRating: number;
 }
 
 export interface IngredientRaw {
@@ -25,22 +25,6 @@ export interface IngredientRaw {
     IngredientName: string;
     IsRecipe: boolean;
     RecipeID?: number;
-}
-
-export interface RecipeVersionIngredientRaw {
-    RecipeVersionIngredientID: number;
-    RecipeVersionID: number;
-    IngredientID: number;
-    Quantity: number;
-    Measurement: string;
-    Prep?: string;
-    Sub?: string;
-}
-
-export interface RecipeVersionPantryIngredientRaw {
-    RecipeVersionPantryIngredientID: number;
-    RecipeVersionID: number;
-    IngredientID: number;
 }
 
 export interface RecipeVersionTableRaw {
@@ -97,13 +81,6 @@ export interface RecipeVersionTagAssignmentRaw {
     RecipeVersionID: number;
     RecipeTagID: number;
     TagNumber: number;
-}
-
-export interface InstructionRaw {
-    InstructionID: number;
-    RecipeVersionID: number;
-    StepNumber: number;
-    StepDetail: string;
 }
 
 export interface NoteRaw {
