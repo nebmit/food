@@ -74,6 +74,7 @@ export interface RecipeVersion {
     VersionComment?: string;
     Description: string;
     Source: string;
+    Course: string;
     Cuisine: string;
     PortionQuantity: number;
     PortionDescriptor: string;
@@ -97,6 +98,7 @@ export interface Recipe {
 export interface RecipeSummary {
     RecipeID: number;
     RecipeName: string;
+    Course: string;
     Cuisine: string;
     Source: string;
     ActiveTimeMinutes: number;

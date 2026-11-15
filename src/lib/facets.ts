@@ -2,14 +2,15 @@ import type { RecipeSummary } from './types';
 
 /**
  * The browse drilldown narrows one facet at a time, in this order. The design
- * wants course → dish → cuisine; until the data repo carries course and dish,
- * tags stand in for the first level.
+ * wants course → dish → cuisine; the data repo carries course and cuisine, so
+ * dish is the level still missing. Tags are not a level: they are matched by
+ * free-text search only.
  */
-export const FACETS = ['tag', 'cuisine'] as const;
+export const FACETS = ['course', 'cuisine'] as const;
 export type FacetKey = typeof FACETS[number];
 
 export const OPTION_LABELS: Record<FacetKey, string> = {
-    tag: 'Category',
+    course: 'Course',
     cuisine: 'Narrow by cuisine',
 };
 
@@ -17,8 +18,8 @@ export type FacetGroup = [label: string, count: number];
 
 export function facetValues(summary: RecipeSummary, key: FacetKey): string[] {
     switch (key) {
-    case 'tag':
-        return summary.Tags;
+    case 'course':
+        return summary.Course ? [summary.Course] : [];
     case 'cuisine':
         return summary.Cuisine ? [summary.Cuisine] : [];
     }
@@ -78,11 +79,12 @@ export function decodePath(raw: string | null | undefined): string[] {
     return raw.split('/').filter(Boolean).map(decodeURIComponent).slice(0, FACETS.length);
 }
 
-/** Free-text match on name, cuisine and tags. */
+/** Free-text match on name, course, cuisine and tags. */
 export function matchesQuery(summary: RecipeSummary, query: string): boolean {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return summary.RecipeName.toLowerCase().includes(q)
+        || summary.Course.toLowerCase().includes(q)
         || summary.Cuisine.toLowerCase().includes(q)
         || summary.Tags.some(tag => tag.toLowerCase().includes(q));
 }

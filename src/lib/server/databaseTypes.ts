@@ -11,6 +11,7 @@ export interface RecipeVersionRaw {
     SchemaVersion: number;
     Description: string;
     Source: string;
+    Course: string;
     Cuisine: string;
     PortionQuantity: number;
     PortionDescriptor: string;

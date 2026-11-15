@@ -17,9 +17,12 @@ const ALLOWED_MEASUREMENTS = new Set([
     'leaf',
 ]);
 
+// The first level of the browse drilldown; a recipe has exactly one course.
+const ALLOWED_COURSES = new Set(['Breakfast', 'Starter', 'Main', 'Side', 'Dessert', 'Snack', 'Drink']);
+
 const ROOT_REQUIRED_KEYS = new Set(['schema_version', 'meta', 'portion', 'items', 'tables']);
 const ROOT_OPTIONAL_KEYS = new Set(['tags', 'note']);
-const META_KEYS = new Set(['description', 'source', 'cuisine']);
+const META_KEYS = new Set(['description', 'source', 'course', 'cuisine']);
 const PORTION_KEYS = new Set([
     'quantity',
     'descriptor',
@@ -48,6 +51,7 @@ interface RecipeYAML {
     meta: {
         description: string;
         source: string;
+        course: string;
         cuisine: string;
     };
     portion: {
@@ -229,6 +233,12 @@ function validateMeta(value: unknown, errors: string[]) {
     validateExactKeys(value, 'meta', META_KEYS, new Set(), errors);
     for (const key of META_KEYS) {
         if (key in value) validateString(value[key], `meta.${key}`, errors);
+    }
+    if (typeof value.course === 'string' && value.course === value.course.trim() && value.course.length > 0
+        && !ALLOWED_COURSES.has(value.course)) {
+        errors.push(
+            `'meta.course' value '${value.course}' is not allowed. Use one of: ${[...ALLOWED_COURSES].sort().join(', ')}`,
+        );
     }
 }
 
@@ -453,6 +463,12 @@ function validateStage(
 
     if ('inputs' in value) validateInputs(value.inputs, `${path}.inputs`, tableIndex, graph, errors);
 
+    // A stage that merges nothing is either a setup action or a wiring mistake.
+    const hasInputs = Array.isArray(value.inputs) ? value.inputs.length > 0 : Boolean(value.inputs);
+    if (!('setup' in value) && !hasInputs) {
+        errors.push(`'${path}' must take at least one input or be marked 'setup: true'`);
+    }
+
     if (!validStageKey) {
         graph.complete = false;
         return;
@@ -609,6 +625,7 @@ export function parseRecipeYAML(recipeData: string): ParsedRecipe {
             SchemaVersion: parsedYaml.schema_version,
             Description: parsedYaml.meta.description,
             Source: parsedYaml.meta.source,
+            Course: parsedYaml.meta.course,
             Cuisine: parsedYaml.meta.cuisine,
             PortionQuantity: parsedYaml.portion.quantity,
             PortionDescriptor: parsedYaml.portion.descriptor,

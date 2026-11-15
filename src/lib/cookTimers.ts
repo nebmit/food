@@ -96,7 +96,13 @@ export function createCookTimers(
 
         toggle(step, minutes) {
             const current = get(timers).get(step);
-            if (current?.running) {
+            if (current && viewOf(current).finished) {
+                // Time is up: the next tap starts a fresh round. A per-side or per-batch
+                // step carries the time of one round, so this is how the second side runs.
+                update(map => {
+                    map.set(step, { step, totalSeconds: minutes * 60, elapsedSeconds: 0, running: true });
+                });
+            } else if (current?.running) {
                 update(map => {
                     map.set(step, { ...current, running: false });
                 });

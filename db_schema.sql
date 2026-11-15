@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS RecipeVersions (
     SchemaVersion INTEGER NOT NULL CHECK (SchemaVersion = 2),
     Description TEXT NOT NULL DEFAULT '',
     Source TEXT NOT NULL DEFAULT '',
+    Course TEXT NOT NULL DEFAULT '',
     Cuisine TEXT NOT NULL DEFAULT '',
     PortionQuantity INTEGER NOT NULL CHECK (PortionQuantity > 0),
     PortionDescriptor TEXT NOT NULL,

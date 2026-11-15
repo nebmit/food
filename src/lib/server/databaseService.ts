@@ -48,6 +48,7 @@ interface SummaryRow {
     RecipeID: number;
     RecipeName: string;
     MainVersionID: number;
+    Course: string;
     Cuisine: string;
     Source: string;
     ActiveTimeMinutes: number;
@@ -140,7 +141,7 @@ export class DatabaseService {
     public static async getRecipeSummaries(): Promise<RecipeSummary[]> {
         const rows: SummaryRow[] = await DatabaseService.db.all(
             `SELECT r.RecipeID, r.RecipeName, r.MainVersionID,
-                    v.Cuisine, v.Source, v.ActiveTimeMinutes, v.PassiveTimeMinutes,
+                    v.Course, v.Cuisine, v.Source, v.ActiveTimeMinutes, v.PassiveTimeMinutes,
                     v.ComplexityRating, v.MayhemRating, v.PortionQuantity, v.PortionDescriptor
              FROM Recipes r
              JOIN RecipeVersions v ON v.RecipeVersionID = r.MainVersionID
@@ -161,6 +162,7 @@ export class DatabaseService {
         return rows.map(row => ({
             RecipeID: row.RecipeID,
             RecipeName: row.RecipeName,
+            Course: row.Course || '',
             Cuisine: row.Cuisine || '',
             Source: row.Source || '',
             ActiveTimeMinutes: row.ActiveTimeMinutes,
@@ -300,6 +302,7 @@ export class DatabaseService {
             VersionComment: version.VersionComment ?? undefined,
             Description: version.Description || '',
             Source: version.Source || '',
+            Course: version.Course || '',
             Cuisine: version.Cuisine || '',
             PortionQuantity: version.PortionQuantity,
             PortionDescriptor: version.PortionDescriptor,
@@ -426,7 +429,7 @@ export class DatabaseService {
     }
 
     public static async patchRecipeVersion(versionId: number, newVersionData: Partial<RecipeVersionRaw>): Promise<void> {
-        const ALLOWED_COLUMNS = ['ParentVersionID', 'VersionComment', 'Description', 'Source', 'Cuisine', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'];
+        const ALLOWED_COLUMNS = ['ParentVersionID', 'VersionComment', 'Description', 'Source', 'Course', 'Cuisine', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'];
         const validKeys = Object.keys(newVersionData).filter(key => ALLOWED_COLUMNS.includes(key));
 
         if (!validKeys.length) {
@@ -472,7 +475,7 @@ export class DatabaseService {
     }
 
     public static async insertRecipeVersion(recipeVersion: Partial<RecipeVersionRaw>): Promise<number> {
-        const filteredRecipeVersion: Partial<RecipeVersionRaw> = this.filterAllowedColumns(['ParentVersionID', 'VersionComment', 'SchemaVersion', 'Description', 'Source', 'Cuisine', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'], recipeVersion);
+        const filteredRecipeVersion: Partial<RecipeVersionRaw> = this.filterAllowedColumns(['ParentVersionID', 'VersionComment', 'SchemaVersion', 'Description', 'Source', 'Course', 'Cuisine', 'PortionQuantity', 'PortionDescriptor', 'ActiveTimeMinutes', 'PassiveTimeMinutes', 'ComplexityRating', 'MayhemRating'], recipeVersion);
 
         if (filteredRecipeVersion.SchemaVersion !== 2) throw new Error('SchemaVersion must be 2');
         if (!filteredRecipeVersion.PortionQuantity) throw new Error('PortionQuantity is required');
@@ -483,12 +486,13 @@ export class DatabaseService {
         if (!filteredRecipeVersion.MayhemRating) throw new Error('MayhemRating is required');
 
         const result = await DatabaseService.db.run(
-            `INSERT INTO RecipeVersions (ParentVersionID, VersionComment, SchemaVersion, Description, Source, Cuisine, PortionQuantity, PortionDescriptor, ActiveTimeMinutes, PassiveTimeMinutes, ComplexityRating, MayhemRating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO RecipeVersions (ParentVersionID, VersionComment, SchemaVersion, Description, Source, Course, Cuisine, PortionQuantity, PortionDescriptor, ActiveTimeMinutes, PassiveTimeMinutes, ComplexityRating, MayhemRating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             filteredRecipeVersion.ParentVersionID,
             filteredRecipeVersion.VersionComment,
             filteredRecipeVersion.SchemaVersion,
             filteredRecipeVersion.Description || '',
             filteredRecipeVersion.Source || '',
+            filteredRecipeVersion.Course || '',
             filteredRecipeVersion.Cuisine || '',
             filteredRecipeVersion.PortionQuantity,
             filteredRecipeVersion.PortionDescriptor,

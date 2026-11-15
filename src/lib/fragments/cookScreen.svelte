@@ -233,7 +233,7 @@
                                 class="font-mono text-[9px] leading-none tracking-[.16em] uppercase text-accent"
                             >
                                 {view?.finished
-                                    ? "Time is up"
+                                    ? "Time is up · tap to restart"
                                     : view?.running
                                       ? "Tap to pause"
                                       : view

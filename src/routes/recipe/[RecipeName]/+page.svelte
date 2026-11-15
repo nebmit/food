@@ -292,7 +292,7 @@
                             : 'border-accent text-accent'}"
                     >
                         {view
-                            ? `${view.clock}${view.running ? "" : view.finished ? " ready" : " paused"}`
+                            ? `${view.clock}${view.finished ? " · restart" : view.running ? "" : " paused"}`
                             : `Start ${current.durationMinutes} min timer`}
                     </button>
                     {#if currentTimer}

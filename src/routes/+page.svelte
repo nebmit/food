@@ -14,7 +14,7 @@
 
     $: summaries = data.summaries;
     $: filtered = summaries.filter((s) => matchesQuery(s, searchQuery));
-    $: categories = groupBy(summaries, "tag").map(([label, count]) => ({
+    $: categories = groupBy(summaries, "course").map(([label, count]) => ({
         label,
         count,
         sub: groupBy(applyPath(summaries, [label]), "cuisine")
